@@ -189,3 +189,59 @@ def load_compressed(filepath: str):
         obj = joblib.load(f)
     print(f"已成功读取: {filepath}")
     return obj
+
+
+def train_and_save(config_path: str):
+    """
+    构建实验、训练模型、保存 model / monitor（含未压缩和压缩版）。
+
+    返回:
+        clf: 训练好的分类模型
+        monitor: BoostMonitor 对象
+        data:Tuple of (X_train, X_test, y_train, y_test, noise_idx, clean_idx),
+        paths: 包含所有输出文件路径的字典
+    """
+    # ========= 1. 构建实验 =========
+    (
+        clf,
+        monitor,
+        (X_train, X_test, y_train, y_test, noise_idx, clean_idx),
+        result_csv,
+        result_dir,
+    ) = build_experiment(config_path)
+
+    print("开始训练...")
+    clf.fit(X_train, y_train)
+    print("训练完成！")
+
+    # 保存 monitor 结果 CSV
+    monitor.dump(result_csv)
+
+    # ========= 2. 保存未压缩 joblib =========
+    raw_clf_path = os.path.join(result_dir, "model.joblib")
+    raw_monitor_path = os.path.join(result_dir, "monitor.joblib")
+
+    joblib.dump(clf, raw_clf_path)
+    joblib.dump(monitor, raw_monitor_path)
+
+    print(f"未压缩模型保存到: {raw_clf_path}")
+    print(f"未压缩监控器保存到: {raw_monitor_path}")
+
+    # ========= 3. 保存压缩版 =========
+    compressed_clf_path = dump_compressed(clf, raw_clf_path)
+    compressed_monitor_path = dump_compressed(monitor, raw_monitor_path)
+
+    print(f"压缩模型保存到: {compressed_clf_path}")
+    print(f"压缩监控器保存到: {compressed_monitor_path}")
+
+    # ========= 4. 返回结果 =========
+    paths = {
+        "raw_clf": raw_clf_path,
+        "raw_monitor": raw_monitor_path,
+        "compressed_clf": compressed_clf_path,
+        "compressed_monitor": compressed_monitor_path,
+        "monitor_csv": result_csv,
+        "result_dir": result_dir,
+    }
+
+    return clf, monitor, (X_train, X_test, y_train, y_test, noise_idx, clean_idx), paths
