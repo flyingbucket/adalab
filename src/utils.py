@@ -2,11 +2,13 @@ import json
 import os
 import joblib
 import lzma
+import time
 
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
+
 from src.monitor import BoostMonitor
 from src.patch import AdaBoostClfWithMonitor
 
@@ -102,11 +104,43 @@ def load_config(config_path):
         return json.load(f)
 
 
+def is_effectively_empty(dir_path):
+    if not os.path.exists(dir_path):
+        return True
+
+    for root, dirs, files in os.walk(dir_path):
+        if files:
+            return False
+    return True
+
+
+def safe_exp_dir(exp_name):
+    """
+    根据 exp_name 构造实验目录，如果已有内容则自动添加时间戳
+    """
+    base_dir = "experiments"
+    exp_dir = os.path.join(base_dir, exp_name)
+
+    if is_effectively_empty(exp_dir):
+        # 目录不存在 or “逻辑上空”，直接使用
+        return exp_dir
+
+    # 否则自动加 timestamp
+    ts = time.strftime("%Y%m%d_%H%M%S")
+    new_exp_name = f"{exp_name}_{ts}"
+    new_exp_dir = os.path.join(base_dir, new_exp_name)
+
+    print(f"[WARNING] 实验目录 '{exp_dir}' 非空，将自动切换至新目录 '{new_exp_dir}'")
+
+    return new_exp_dir
+
+
 def build_experiment(config_path):
     config = load_config(config_path)
 
     exp_name = config["experiment"]["name"]
-    exp_dir = os.path.join("experiments", exp_name)
+    raw_exp_dir = os.path.join("experiments", exp_name)
+    exp_dir = safe_exp_dir(raw_exp_dir)
 
     # === 自动创建目录结构 ===
     ckpt_dir = os.path.join(exp_dir, "checkpoints")
