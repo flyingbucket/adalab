@@ -1,6 +1,6 @@
 {
   "experiment": {
-    "name": "long_train_val"
+    "name": "train_val_500rounds"
   },
 
   "data": {
@@ -11,7 +11,7 @@
 
   "monitor": {
     "is_data_noisy": true,
-    "checkpoint_interval": 10
+    "checkpoint_interval": 50
   },
 
   "model": {
