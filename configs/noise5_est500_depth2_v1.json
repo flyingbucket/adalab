@@ -1,0 +1,25 @@
+{
+  "experiment": {
+    "name": "noise5_est500_depth2"
+  },
+
+  "data": {
+    "noise_ratio": 0.05,
+    "test_size": 0.2,
+    "random_state": 42
+  },
+
+  "monitor": {
+    "is_data_noisy": true,
+    "checkpoint_interval": 50
+  },
+
+  "model": {
+    "estimator": {
+      "max_depth": 2
+    },
+    "n_estimators": 500,
+    "learning_rate": 0.5,
+    "random_state": 42
+  }
+}
