@@ -1,5 +1,7 @@
 import json
 import os
+import joblib
+import lzma
 
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
@@ -164,3 +166,26 @@ def build_experiment(config_path):
         result_csv,
         result_dir,
     )
+
+
+def dump_compressed(obj, filepath: str):
+    """
+    使用 lzma 压缩并保存任意 Python 对象
+    """
+    compressed_path = filepath + ".xz"
+
+    with lzma.open(compressed_path, "wb") as f:
+        joblib.dump(obj, f)
+
+    print(f"已保存并压缩到: {compressed_path}")
+    return compressed_path
+
+
+def load_compressed(filepath: str):
+    """
+    自动读取 .xz 压缩的 joblib 文件
+    """
+    with lzma.open(filepath, "rb") as f:
+        obj = joblib.load(f)
+    print(f"已成功读取: {filepath}")
+    return obj
