@@ -128,6 +128,7 @@ class AdaBoostClfWithMonitor(AdaBoostClassifier):
 
         # validation
         self._run_validation(iboost)
+        self._val_on_train_data(iboost, X, y)
         # save monitor data checkpoint
         self._monitor.auto_checkpoint(iboost)
         return sample_weight, estimator_weight, estimator_error
@@ -147,3 +148,17 @@ class AdaBoostClfWithMonitor(AdaBoostClassifier):
         # 写进 monitor
         if hasattr(self, "_monitor") and self._monitor is not None:
             self._monitor.record_validation(iboost, acc, f1)
+
+    def _val_on_train_data(self, iboost, X, y):
+        """Calculate scores on training data."""
+
+        # 当前模型的集成已经形成，可以直接 predict
+        y_pred = self.predict(X)
+
+        # 计算指标
+        acc = accuracy_score(y, y_pred)
+        f1 = f1_score(y, y_pred, average="macro")
+
+        # 写进 monitor
+        if hasattr(self, "_monitor") and self._monitor is not None:
+            self._monitor.record_training_scores(iboost, acc, f1)

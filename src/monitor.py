@@ -1,4 +1,3 @@
-import os
 import warnings
 import pandas as pd
 
@@ -28,6 +27,11 @@ class BoostMonitor:
         # validation history
         self.val_acc_history = []
         self.val_f1_history = []
+
+        # scores on training data
+        self.acc_on_train_data = []
+        self.f1_on_training_data = []
+
         # checkpoint
         self.checkpoint_interval = checkpoint_interval
         self.checkpoint_prefix = checkpoint_prefix
@@ -47,55 +51,96 @@ class BoostMonitor:
         total,
         error_without_weight=None,
     ):
-        """记录 boost 结束后的信息和日志"""
+        """记录 boost 结束后的信息"""
+
         if estimator_error is not None:
             self.error_history.append(estimator_error)
             self.alpha_history.append(estimator_weight)
         if error_without_weight is not None:
             self.error_without_weight_history.append(error_without_weight)
 
-        self._log_boost_info(
-            iboost,
-            total,
-            estimator_error,
-            estimator_weight,
-            error_without_weight,
+        # 统一走事件日志
+        self._log_event(
+            event_type="boost",
+            iboost=iboost,
+            total=total,
+            error=estimator_error,
+            alpha=estimator_weight,
+            unweighted_err=error_without_weight,
+            noisy_w=self.noisy_weight_history[-1] if self.is_data_noisy else None,
         )
-
-    def _log_boost_info(
-        self,
-        iboost,
-        total,
-        estimator_error,
-        estimator_weight,
-        error_without_weight=None,
-    ):
-        """统一的日志打印函数"""
-
-        # 每 5 轮打印一次
-        if (iboost + 1) % 5 != 0:
-            return
-
-        # 基础信息
-        msg = (
-            f"Boost {iboost + 1}/{total} | "
-            f"error = {estimator_error:.4f} | "
-            f"alpha = {estimator_weight:.4f}"
-        )
-
-        if error_without_weight is not None:
-            msg += f" | unweighted_err = {error_without_weight:.4f}"
-
-        if self.is_data_noisy:
-            msg += f" | noisy_w = {self.noisy_weight_history[-1]:.6f}"
-
-        print(msg)
 
     def record_validation(self, iboost, acc, f1):
+        """记录验证集指标"""
         self.val_acc_history.append(acc)
         self.val_f1_history.append(f1)
 
-        print(f"[VAL] round={iboost:03d} | acc={acc:.4f} | f1={f1:.4f}")
+        self._log_event(
+            event_type="val",
+            iboost=iboost,
+            acc=acc,
+            f1=f1,
+        )
+
+    def record_training_scores(self, iboost, acc, f1):
+        """记录训练集预测表现"""
+        self.acc_on_train_data.append(acc)
+        self.f1_on_training_data.append(f1)
+
+        self._log_event(
+            event_type="train",
+            iboost=iboost,
+            acc=acc,
+            f1=f1,
+        )
+
+    def _log_event(self, event_type, **kwargs):
+        """
+        统一打印日志函数。
+        event_type 取值：'boost' / 'val' / 'train'
+        """
+
+        # ---- Boost 事件 ----
+        if event_type == "boost":
+            iboost = kwargs["iboost"]
+            total = kwargs["total"]
+            error = kwargs["error"]
+            alpha = kwargs["alpha"]
+            unweighted_err = kwargs.get("unweighted_err")
+            noisy_w = kwargs.get("noisy_w")
+
+            # 每 5 轮打印一次
+            if (iboost + 1) % 5 != 0:
+                return
+
+            msg = (
+                f"[BOOST] {iboost + 1}/{total} | error={error:.4f} | alpha={alpha:.4f}"
+            )
+            if unweighted_err is not None:
+                msg += f" | unweighted_err={unweighted_err:.4f}"
+            if noisy_w is not None:
+                msg += f" | noisy_w={noisy_w:.6f}"
+
+            print(msg)
+            return
+
+        if event_type in ("val", "train"):
+            iboost = kwargs["iboost"]
+            acc = kwargs["acc"]
+            f1 = kwargs["f1"]
+
+            tag = "[VAL]" if event_type == "val" else "[TRAIN]"
+
+            # 统一格式
+            msg = (
+                f"{tag.ljust(7)}"  # 保证 [VAL] / [TRAIN] 左对齐，占 7 字符
+                f"round={iboost:03d} | "
+                f"acc={acc:8.4f} | "  # 保证 acc 列对齐
+                f"f1={f1:8.4f}"  # 保证 f1 列对齐
+            )
+
+            print(msg)
+            return
 
     def auto_checkpoint(self, iboost):
         """
@@ -112,6 +157,10 @@ class BoostMonitor:
             "round": list(range(1, rounds + 1)),
             "weighted_error": self.error_history,
             "alpha": self.alpha_history,
+            "acc_on_training_data": self.acc_on_train_data,
+            "f1_on_training_data": self.f1_on_training_data,
+            "val_acc_history": self.val_acc_history,
+            "val_f1_history": self.val_f1_history,
         }
 
         # 普通错误率
@@ -154,6 +203,8 @@ class BoostMonitor:
             "round": list(range(1, rounds + 1)),
             "weighted_error": self.error_history,
             "alpha": self.alpha_history,
+            "acc_on_training_data": self.acc_on_train_data,
+            "f1_on_training_data": self.f1_on_training_data,
         }
 
         # 普通错误率（unweighted）
