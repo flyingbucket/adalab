@@ -139,8 +139,7 @@ def build_experiment(config_path):
     config = load_config(config_path)
 
     exp_name = config["experiment"]["name"]
-    raw_exp_dir = os.path.join("experiments", exp_name)
-    exp_dir = safe_exp_dir(raw_exp_dir)
+    exp_dir = safe_exp_dir(exp_name)
 
     # === 自动创建目录结构 ===
     ckpt_dir = os.path.join(exp_dir, "checkpoints")
