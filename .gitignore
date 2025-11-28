@@ -1,7 +1,8 @@
 *__pycache__
 
 *.joblib
-
+*.joblib.xz
+*.joblib.xz.part*
 *.tar
 *.tar.gz
 *.zip
