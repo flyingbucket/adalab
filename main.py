@@ -2,7 +2,6 @@ import os
 import json
 import argparse
 
-from pandas._config import config
 from sklearn.metrics import (
     accuracy_score,
     precision_score,

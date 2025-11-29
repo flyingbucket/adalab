@@ -334,6 +334,11 @@ def build_experiment(config_path):
     exp_name = config["experiment"]["name"]
     exp_dir = safe_exp_dir(exp_name)
 
+    os.makedirs(exp_dir, exist_ok=True)
+    config_dump_path = os.path.join(exp_dir, "config.json")
+    with open(config_dump_path, "w") as fw:
+        json.dump(config, fw, indent=4)
+
     # === 自动创建目录结构 ===
     ckpt_dir = os.path.join(exp_dir, "checkpoints")
     result_dir = os.path.join(exp_dir, "results")

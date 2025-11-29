@@ -108,16 +108,16 @@ plt.title("Validation Accuracy Over Boosting Rounds")
 
 ## 3. 属性的数据结构总结表
 
-|属性名|形状/类型|每一轮记录一次？|用途|
-|---|---|---|---|
-|`sample_weights_history`|List[np.ndarray(shape=(n_samples,))]|是|全部样本权重|
-|`noisy_weight_history`|List[float]|是|噪声样本权重和|
-|`clean_weight_history`|List[float]|是|干净样本权重和|
-|`error_without_weight_history`|List[float]|是|未加权错误率|
-|`error_history`|List[float]|是|加权错误率 ε_t|
-|`alpha_history`|List[float]|是|弱分类器系数 α_t|
-|`val_acc_history`|List[float]|是|val acc|
-|`val_f1_history`|List[float]|是|val f1|
-|`acc_on_train_data`|List[float]|是|train acc|
-|`f1_on_training_data`|List[float]|是|train f1|
+| 属性名                            | 形状/类型                                | 用途         |
+| ------------------------------ | ------------------------------------ | ---------- |
+| `sample_weights_history`       | List[np.ndarray(shape=(n_samples,))] | 全部样本权重     |
+| `noisy_weight_history`         | List[float]                          | 噪声样本权重和    |
+| `clean_weight_history`         | List[float]                          | 干净样本权重和    |
+| `error_without_weight_history` | List[float]                          | 未加权错误率     |
+| `error_history`                | List[float]                          | 加权错误率 ε_t  |
+| `alpha_history`                | List[float]                          | 弱分类器系数 α_t |
+| `val_acc_history`              | List[float]                          | val acc    |
+| `val_f1_history`               | List[float]                          | val f1     |
+| `acc_on_train_data`            | List[float]                          | train acc  |
+| `f1_on_training_data`          | List[float]                          | train f1   |
 
