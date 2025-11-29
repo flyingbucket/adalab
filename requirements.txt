@@ -1,0 +1,11 @@
+numpy>=2.0,<2.3
+pandas>=2.3
+matplotlib
+seaborn
+scikit-learn>=1.7
+scikit-image>=0.25
+opencv-python>=4.10
+tqdm
+ipykernel
+mplfonts
+

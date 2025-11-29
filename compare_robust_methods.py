@@ -15,9 +15,10 @@ import time
 from src.utils import prepare_data
 from src.robust_adaboost import RobustAdaBoost, create_robust_adaboost
 
-# 初始化中文字体
-init()
-matplotlib.rcParams["font.family"] = "Source Han Sans CN"
+# 初始化字体
+# init()  # 如需中文支持可取消注释
+# matplotlib.rcParams["font.family"] = "Source Han Sans CN"  # 中文字体
+matplotlib.rcParams["font.family"] = "DejaVu Sans"  # 英文字体（跨平台兼容）
 matplotlib.rcParams["axes.unicode_minus"] = False
 
 
@@ -385,4 +386,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
