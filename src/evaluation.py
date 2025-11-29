@@ -14,9 +14,10 @@ from sklearn.metrics import (
 )
 import seaborn as sns
 
-# 初始化中文字体支持
-init()
-matplotlib.rcParams["font.family"] = "Source Han Sans CN"
+# 初始化字体支持
+# init()  # 如需中文支持可取消注释
+# matplotlib.rcParams["font.family"] = "Source Han Sans CN"  # 中文字体
+matplotlib.rcParams["font.family"] = "DejaVu Sans"  # 英文字体（跨平台兼容）
 matplotlib.rcParams["axes.unicode_minus"] = False  # 解决负号显示问题
 
 
@@ -783,7 +784,7 @@ def visualize_overfitting_process(
     }
 
     # 训练多个模型
-    for n_est in tqdm(n_estimators_list, desc="训练进度"):
+    for n_est in tqdm(n_estimators_list, desc="Training Progress"):
         clf = AdaBoostClassifier(
             estimator=base_estimator,
             n_estimators=n_est,
@@ -802,7 +803,7 @@ def visualize_overfitting_process(
         results["test_accuracy"].append(test_acc)
         results["overfitting_degree"].append(train_acc - test_acc)
 
-    print("训练完成！")
+    print("Training completed!")
 
     # 创建可视化
     fig, axes = plt.subplots(1, 2, figsize=(16, 6))
@@ -813,20 +814,20 @@ def visualize_overfitting_process(
     train_acc = results["train_accuracy"]
     test_acc = results["test_accuracy"]
 
-    ax1.plot(n_est, train_acc, "b-o", linewidth=2, markersize=8, label="训练集准确率")
-    ax1.plot(n_est, test_acc, "r-s", linewidth=2, markersize=8, label="测试集准确率")
-    ax1.fill_between(n_est, train_acc, test_acc, alpha=0.3, color="orange", label="过拟合区域")
+    ax1.plot(n_est, train_acc, "b-o", linewidth=2, markersize=8, label="Train Accuracy")
+    ax1.plot(n_est, test_acc, "r-s", linewidth=2, markersize=8, label="Test Accuracy")
+    ax1.fill_between(n_est, train_acc, test_acc, alpha=0.3, color="orange", label="Overfitting Gap")
 
     # 标记最佳点
     best_idx = np.argmax(test_acc)
     best_n = n_est[best_idx]
     best_test_acc = test_acc[best_idx]
-    ax1.plot(best_n, best_test_acc, "g*", markersize=20, label=f"最佳点 (n={best_n})")
+    ax1.plot(best_n, best_test_acc, "g*", markersize=20, label=f"Best (n={best_n})")
     ax1.axvline(x=best_n, color="green", linestyle="--", alpha=0.5)
 
-    ax1.set_xlabel("弱学习器数量", fontsize=14)
-    ax1.set_ylabel("准确率", fontsize=14)
-    ax1.set_title("学习曲线：准确率 vs 弱学习器数量", fontsize=16, pad=15)
+    ax1.set_xlabel("Number of Weak Learners", fontsize=14)
+    ax1.set_ylabel("Accuracy", fontsize=14)
+    ax1.set_title("Learning Curves: Accuracy vs Number of Estimators", fontsize=16, pad=15)
     ax1.legend(fontsize=12, loc="lower right")
     ax1.grid(True, alpha=0.3)
     ax1.set_ylim([min(test_acc) - 0.05, 1.0])
@@ -837,7 +838,7 @@ def visualize_overfitting_process(
 
     ax2.plot(n_est, overfit, "purple", linewidth=3, marker="o", markersize=8)
     ax2.fill_between(
-        n_est, 0, overfit, where=np.array(overfit) > 0, alpha=0.3, color="red", label="过拟合区域"
+        n_est, 0, overfit, where=np.array(overfit) > 0, alpha=0.3, color="red", label="Overfitting Region"
     )
     ax2.axhline(y=0, color="black", linestyle="--", linewidth=1, alpha=0.5)
 
@@ -850,13 +851,13 @@ def visualize_overfitting_process(
         min_overfit_val,
         "g*",
         markersize=20,
-        label=f"最小过拟合 (n={min_overfit_n})",
+        label=f"Min Overfitting (n={min_overfit_n})",
     )
     ax2.axvline(x=min_overfit_n, color="green", linestyle="--", alpha=0.5)
 
-    ax2.set_xlabel("弱学习器数量", fontsize=14)
-    ax2.set_ylabel("过拟合程度 (训练准确率 - 测试准确率)", fontsize=14)
-    ax2.set_title("过拟合程度随弱学习器数量的变化", fontsize=16, pad=15)
+    ax2.set_xlabel("Number of Weak Learners", fontsize=14)
+    ax2.set_ylabel("Overfitting Degree (Train Acc - Test Acc)", fontsize=14)
+    ax2.set_title("Overfitting vs Number of Estimators", fontsize=16, pad=15)
     ax2.legend(fontsize=12)
     ax2.grid(True, alpha=0.3)
 
