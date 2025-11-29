@@ -149,26 +149,64 @@
 
 ## 4.4 字段：`model`
 
-构造 AdaBoost / AdaBoostClfWithMonitor 的参数。
+用于构造 AdaBoost / AdaBoostClfWithMonitor 的参数。
 
-| key             | 类型    | 含义                                 |
-| --------------- | ----- | ---------------------------------- |
-| `estimator`     | dict  | 基学习器的参数（用于 DecisionTreeClassifier） |
-| `n_estimators`  | int   | AdaBoost 的弱分类器数量                   |
-| `learning_rate` | float | AdaBoost 学习率                       |
-| `random_state`  | int   | 随机数种子                              |
+### 字段说明
 
-示例：
+| key             | 类型    | 含义                                                             |
+| --------------- | ----- | -------------------------------------------------------------- |
+| `estimator`     | dict  | **基学习器的参数字典**（直接传给 `DecisionTreeClassifier(**estimator)`）      |
+| `n_estimators`  | int   | AdaBoost 的弱分类器数量                                               |
+| `learning_rate` | float | AdaBoost 学习率                                                   |
+| `algorithm`     | str   | AdaBoost 的算法类型，一般为 `"SAMME"` 或 `"SAMME.R"`（多分类推荐用 `"SAMME.R"`） |
+| `random_state`  | int   | 随机数种子                                                          |
+
+### 字段：`estimator` 的常见参数（可选）
+
+`estimator` 内部的参数会 **原样传入** `DecisionTreeClassifier`，常见字段包括：
+
+| key            | 类型            | 默认值      | 含义                                      |
+| -------------- | ------------- | -------- | --------------------------------------- |
+| `max_depth`    | int           | 必填       | 弱学习器（决策树）的最大深度                          |
+| `criterion`    | str           | `"gini"` | 划分标准，常用 `"gini"` 或 `"entropy"`          |
+| `max_features` | int/float/str | `None`   | 每棵树可使用的特征数量，可用于加速（例如 `0.25` 表示用 25% 特征） |
+| `random_state` | int           | 任意       | 决策树的随机种子                                |
+
+用户可根据需要添加任何 `DecisionTreeClassifier` 支持的参数，不需要修改 Python 代码。
+
+---
+
+### 示例
 
 ```json
 "model": {
-  "estimator": { "max_depth": 2 },
+  "estimator": {
+    "max_depth": 2,
+    "criterion": "entropy",
+    "max_features": 0.25,
+    "random_state": 42
+  },
   "n_estimators": 500,
   "learning_rate": 0.5,
+  "algorithm": "SAMME.R",
   "random_state": 42
 }
 ```
 
+此配置会自动展开为：
+
+```python
+DecisionTreeClassifier(
+    max_depth=2,
+    criterion="entropy",
+    max_features=0.25,
+    random_state=42
+)
+```
+
+并用于构建 AdaBoost 模型。
+
+你想继续扩展哪部分？
 ---
 
 ## 5. 配置文件模板
@@ -206,7 +244,10 @@
 
   "model": {
     "estimator": {
-      "max_depth": 2                // 基学习器（决策树）配置
+      "max_depth": 2,               // 基学习器（弱分类器）深度
+      "criterion": "entropy",       // 高维下更快、更稳定
+      "max_features": 0.25,         // 每棵树只用 25% 特征（提速 3–5 倍）
+      "random_state": 42
     },
     "n_estimators": 500,            // AdaBoost 的弱分类器数
     "learning_rate": 0.5,           // AdaBoost 学习率
