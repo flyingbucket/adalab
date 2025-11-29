@@ -58,6 +58,6 @@ if __name__ == "__main__":
 
     scores = {"mnist": scores_on_mnist, "course_data": scores_on_course}
     result_dir = paths["result_dir"]
-    score_path = os.path.join(result_dir, "scores")
+    score_path = os.path.join(result_dir, "scores.json")
     with open(score_path, "w") as f:
         json.dump(scores, f, indent=4)
