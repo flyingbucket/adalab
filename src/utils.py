@@ -375,20 +375,6 @@ def build_experiment(config_path):
         noise_idx,
         clean_idx,
     ) = prep.prepare()
-    # # === 1. 数据准备 ===
-    # data_cfg = config["data"]
-    # (
-    #     X_train,
-    #     X_test,
-    #     y_train,
-    #     y_test,
-    #     noise_idx,
-    #     clean_idx,
-    # ) = prepare_data(
-    #     noise_ratio=data_cfg["noise_ratio"],
-    #     test_size=data_cfg["test_size"],
-    #     random_state=data_cfg["random_state"],
-    # )
 
     # === 构造 Monitor 和 模型===
     monitor_cfg = config["monitor"]
@@ -414,6 +400,7 @@ def build_experiment(config_path):
             prep,
             (X_train, X_test, y_train, y_test, noise_idx, clean_idx),
             result_csv,
+            exp_dir,
             result_dir,
         )
 
@@ -448,6 +435,7 @@ def build_experiment(config_path):
         prep,
         (X_train, X_test, y_train, y_test, noise_idx, clean_idx),
         result_csv,
+        exp_dir,
         result_dir,
     )
 
@@ -565,6 +553,7 @@ def train_and_save(config_path: str):
         prep,
         (X_train, X_test, y_train, y_test, noise_idx, clean_idx),
         result_csv,
+        exp_dir,
         result_dir,
     ) = build_experiment(config_path)
 
@@ -606,6 +595,7 @@ def train_and_save(config_path: str):
         "compressed_clf": compressed_clf_path,
         "compressed_monitor": compressed_monitor_path,
         "monitor_csv": result_csv,
+        "experiment_dir": exp_dir,
         "result_dir": result_dir,
     }
 
