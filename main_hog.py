@@ -1,5 +1,8 @@
 import os
 import json
+import argparse
+
+from pandas._config import config
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
@@ -31,13 +34,18 @@ def evaluate(y_true, y_pred, title="Evaluation"):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config_path", type=str, help="Path to json config file")
+    args = parser.parse_args()
+    config_path = args.config_path
+
     (
         clf,
         monitor,
         data_prep,
         (X_train, X_test_mnist, y_train, y_test_mnist, noise_idx, clean_idx),
         paths,
-    ) = train_and_save("./configs/main_hog_v2.json")
+    ) = train_and_save(config_path)
 
     X_course, y_course = data_prep.prepare_course_data("test_data")
     y_pred_mnist = clf.predict(X_test_mnist)
