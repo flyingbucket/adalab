@@ -1,28 +1,33 @@
 {
-  "experiment": { "name": "overfit_depth4_lr1_noise20" },
+  "experiment": { "name": "overfit_E1_hog_depth4_lr1" },
 
   "data": {
     "noise_ratio": 0.20,
     "test_size": 0.2,
     "random_state": 42,
-    "use_feature": "original"
+    "use_feature": "hog",
+    "hog_params": {
+      "orientations": 9,
+      "pixels_per_cell": [2, 2],
+      "cells_per_block": [2, 2]
+    }
   },
 
   "monitor": {
     "use_monitor": true,
     "is_data_noisy": true,
-    "checkpoint_interval": 20
+    "checkpoint_interval": 100
   },
 
   "model": {
     "estimator": {
       "max_depth": 4,
       "criterion": "entropy",
-      "max_features": 1.0,
-      "random_state": 42
+      "max_features": 1.0
     },
-    "n_estimators": 500,
-    "learning_rate": 1.2,
+    "n_estimators": 600,
+    "learning_rate": 1.0,
     "random_state": 42
   }
 }
+
