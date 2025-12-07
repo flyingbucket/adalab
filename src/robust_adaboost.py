@@ -127,11 +127,17 @@ class RobustAdaBoost:
             estimator_error = np.sum(sample_weight * incorrect) / np.sum(sample_weight)
 
             # 如果错误率太高，停止训练
-            if estimator_error >= 0.5:
+            # 注意：对于多分类问题，初始错误率可能较高，因此放宽条件
+            if estimator_error >= 0.9:  # 放宽到90%，只有在极端情况下才停止
                 print(
-                    f"轮次 {i+1}: 错误率 {estimator_error:.4f} >= 0.5，提前停止"
+                    f"轮次 {i+1}: 错误率 {estimator_error:.4f} >= 0.9，提前停止"
                 )
                 break
+            elif estimator_error >= 0.5:
+                # 对于多分类，错误率>50%不一定意味着没有用处
+                # 继续训练但打印警告
+                if i == 0:  # 只在第一轮打印警告
+                    print(f"警告：轮次 {i+1} 错误率 {estimator_error:.4f}，继续训练...")
 
             # 计算弱学习器权重α
             estimator_weight = self.learning_rate * np.log(
@@ -405,5 +411,7 @@ def create_robust_adaboost(strategy="balanced", **kwargs):
     config.update(kwargs)
 
     return RobustAdaBoost(**config)
+
+
 
 
