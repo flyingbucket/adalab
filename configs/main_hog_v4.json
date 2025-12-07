@@ -18,7 +18,9 @@
   },
 
   "monitor": {
-    "use_monitor": false
+    "use_monitor": true,
+    "is_data_noisy": false,
+    "checkpoint_interval": 100
   },
 
   "model": {
