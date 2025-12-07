@@ -1,0 +1,29 @@
+{
+  "experiment": {
+    "name": "noise10_overfit_demo"
+  },
+
+  "data": {
+    "noise_ratio": 0.10,        
+    "test_size": 0.2,
+    "use_feature": "original",
+    "random_state": 42
+  },
+
+  "monitor": {
+    "use_monitor": true,
+    "is_data_noisy": true,
+    "checkpoint_interval": 50  
+  },
+
+  "model": {
+    "estimator": {
+      "max_depth": 3,      
+      "criterion": "entropy",
+      "max_features": 1.0 
+    },
+    "n_estimators": 400, 
+    "learning_rate": 1.0,
+    "random_state": 42
+  }
+}
