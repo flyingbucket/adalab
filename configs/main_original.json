@@ -1,0 +1,28 @@
+{
+  "experiment": {
+    "name": "main_original"  
+  },
+
+  "data": {
+    "noise_ratio": 0.0,            
+    "test_size": 0.2,             
+    "random_state": 42,          
+    "use_feature": "original",        
+  },
+
+  "monitor": {
+    "use_monitor": false       
+  },
+
+  "model": {
+    "estimator": {
+      "max_depth": 2,         
+      "criterion": "entropy",
+      "max_features": 0.25, 
+      "random_state": 42
+    },
+    "n_estimators": 500,   
+    "learning_rate": 0.5, 
+    "random_state": 42   
+  }
+}
