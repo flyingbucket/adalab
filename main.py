@@ -9,7 +9,7 @@ from sklearn.metrics import (
     f1_score,
 )
 
-from src.utils import train_and_save
+from adalab.workflow import train_and_save
 
 
 def evaluate(y_true, y_pred, title="Evaluation"):
