@@ -4,9 +4,22 @@
   },
 
   "data": {
-    "noise_ratio": 0.05,
+    "noise_config": {
+        "label_flip": {"ratio": 0.2},
+        "gaussian": {"std": 0.05},
+        "salt_pepper": {"amount": 0.02},
+        "contrast": {"factor_range": [0.7, 1.3]},
+        "rotate": {"angle_range": 10},
+        "blur": {"kernel_size": 3},
+        "brightness": {"shift_range": 0.2}
+      },
     "test_size": 0.2,
-    "random_state": 42
+    "random_state": 42,
+    "use_feature": "hu",        
+
+    "hu_params": {
+      "log_scale": true
+    }
   },
 
   "monitor": {
