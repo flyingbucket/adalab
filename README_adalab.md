@@ -95,24 +95,67 @@ pip install "adalab[viz]"
 
 ---
 
-# 📦 Installation
+# 📦 Installation 安装方式
 
-## 基础功能（训练+数据处理）
+`adalab` 与 `adalab_viz` 尚未发布到 PyPI，因此推荐 **直接从 GitHub 源码安装**（最稳定、最符合科研开发需求）。
 
+---
+
+## 🔧 **方法一：从 GitHub 源码安装（推荐方式）**
+
+克隆仓库：
+
+```bash
+git clone https://github.com/Frederick2313072/ML.git
+cd ML
 ```
-pip install adalab
-```
 
-## 启用完整可视化（推荐）
+安装后端（adalab）与可视化（adalab_viz）模块：
 
-```
-pip install "adalab[viz]"
-```
-
-## 开发模式（本地源码）
-
-```
+```bash
 pip install -e .
+```
+
+说明：
+
+* `-e`（editable）允许你边开发边使用，无需重新安装
+* 这会同时安装 `adalab`（后端）和 `adalab_viz`（可视化模块）
+* 对研究和实验场景最友好
+
+---
+
+## 🧩 **方法二：仅安装后端（不含可视化）**
+
+如果你只需要训练、数据处理、工作流，不需要可视化：
+
+```bash
+pip install -e . --config-settings="extras=''"
+```
+
+（默认情况下 `-e .` 会安装完整版本，包括可视化。）
+
+---
+
+## 📊 **方法三：仅在当前环境启用可视化依赖（matplotlib+mplefonts）**
+
+如果你之前只安装了后端，后续希望补全可视化功能：
+
+```bash
+pip install -e ".[viz]"
+```
+
+---
+
+## 📁 项目结构（关键部分）
+
+```
+ML/
+│
+├── src/
+│   ├── adalab/        # AdaBoost 后端：训练、监控、数据处理、workflow
+│   └── adalab_viz/    # 可视化模块：加载与绘制训练过程图
+│
+└── examples/          # 使用示例脚本
 ```
 
 ---
