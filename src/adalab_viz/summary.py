@@ -4,14 +4,14 @@ import numpy as np
 def print_summary(data):
     """打印数据摘要"""
     print("\n" + "=" * 60)
-    print("Training Summary".center(60))
+    print("[Viz] Training Summary".center(60))
     print("=" * 60)
 
-    print("\n Basic Info:")
+    print("\n[Viz] Basic Info:")
     print(f"   - Total Rounds: {data['n_estimators']}")
     print(f"   - Data Type: {'Noisy' if data['is_data_noisy'] else 'Clean'}")
 
-    print("\n Final Metrics:")
+    print("\n[Viz] Final Metrics:")
     if len(data["val_acc_history"]) > 0:
         print(f"   - Final Val Accuracy: {data['val_acc_history'][-1]:.4f}")
         print(
@@ -24,12 +24,12 @@ def print_summary(data):
             f"   - Best Val F1:  {max(data['val_f1_history']):.4f} (round {data['val_f1_history'].index(max(data['val_f1_history'])) + 1})"
         )
 
-    print("\n Error Analysis:")
+    print("\n[Viz] Error Analysis:")
     print(f"   - Initial Error: {data['error_history'][0]:.4f}")
     print(f"   - Final Error:   {data['error_history'][-1]:.4f}")
     print(f"   - Min Error:     {min(data['error_history']):.4f}")
 
-    print("\n Alpha Analysis:")
+    print("\n[Viz] Alpha Analysis:")
     alphas = data["alpha_history"]
     print(f"   - Mean Alpha: {np.mean(alphas):.3f}")
     print(f"   - Std Alpha:  {np.std(alphas):.3f}")
@@ -37,7 +37,7 @@ def print_summary(data):
     print(f"   - Min Alpha:  {min(alphas):.3f} (round {alphas.index(min(alphas)) + 1})")
 
     if data["is_data_noisy"] and len(data["noisy_weight_history"]) > 0:
-        print("\n Noise Analysis:")
+        print("\n[Viz] Noise Analysis:")
         final_noisy = data["noisy_weight_history"][-1]
         final_clean = data["clean_weight_history"][-1]
         ratio = final_noisy / final_clean if final_clean > 0 else 0
