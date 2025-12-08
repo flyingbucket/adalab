@@ -39,7 +39,7 @@ Examples:
     args = parser.parse_args()
 
     print("\n" + "█" * 60)
-    print("AdaLab Visualization".center(60))
+    print("[Viz] AdaLab Visualization".center(60))
     print("█" * 60)
 
     # ----- 加载数据 -----
@@ -57,9 +57,9 @@ Examples:
 
     # ----- 绘图 -----
     if not args.no_plot:
-        print("\n Generating visualization...")
+        print("\n[Viz] Generating visualization...")
         visualize_training_data(data, save_path=args.save)
-        print("\n✓ Visualization complete!")
+        print("\n[Viz] Visualization complete!")
 
     print("\n" + "=" * 60)
 

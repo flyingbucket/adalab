@@ -11,6 +11,9 @@ from sklearn.metrics import (
     precision_recall_fscore_support,
     confusion_matrix,
     classification_report,
+    precision_score,
+    recall_score,
+    f1_score,
 )
 import seaborn as sns
 
@@ -19,6 +22,26 @@ import seaborn as sns
 # matplotlib.rcParams["font.family"] = "Source Han Sans CN"  # 中文字体
 matplotlib.rcParams["font.family"] = "DejaVu Sans"  # 英文字体（跨平台兼容）
 matplotlib.rcParams["axes.unicode_minus"] = False  # 解决负号显示问题
+
+
+def evaluate(y_true, y_pred, title="Evaluation"):
+    print(f"\n=== {title} ===")
+
+    acc = accuracy_score(y_true, y_pred)
+    prec_macro = precision_score(y_true, y_pred, average="macro", zero_division=0)
+    rec_macro = recall_score(y_true, y_pred, average="macro", zero_division=0)
+    f1_macro = f1_score(y_true, y_pred, average="macro", zero_division=0)
+
+    print(f"Accuracy:       {acc:.4f}")
+    print(f"Precision_macro:{prec_macro:.4f}")
+    print(f"Recall_macro:   {rec_macro:.4f}")
+    print(f"F1_macro:       {f1_macro:.4f}")
+    return {
+        "accuracy": acc,
+        "precision_macro": prec_macro,
+        "recall_macro": rec_macro,
+        "f1_macro": f1_macro,
+    }
 
 
 class ModelEvaluator:
@@ -145,7 +168,9 @@ class ModelEvaluator:
         print("-" * 60)
         print(f"噪声样本准确率: {noise_acc:.4f} ({noise_acc * 100:.2f}%)")
         print(f"干净样本准确率: {clean_acc:.4f} ({clean_acc * 100:.2f}%)")
-        print(f"准确率差距: {clean_acc - noise_acc:.4f} ({(clean_acc - noise_acc) * 100:.2f}%)")
+        print(
+            f"准确率差距: {clean_acc - noise_acc:.4f} ({(clean_acc - noise_acc) * 100:.2f}%)"
+        )
         print("=" * 60)
 
         return {
@@ -246,7 +271,9 @@ class ModelEvaluator:
         axes[0, 0].set_title("各类别精确率", fontsize=14)
         axes[0, 0].set_ylabel("精确率", fontsize=12)
         axes[0, 0].set_ylim([0, 1.05])
-        axes[0, 0].axhline(y=precision.mean(), color="r", linestyle="--", label="平均值")
+        axes[0, 0].axhline(
+            y=precision.mean(), color="r", linestyle="--", label="平均值"
+        )
         axes[0, 0].legend()
         axes[0, 0].grid(axis="y", alpha=0.3)
 
@@ -325,8 +352,8 @@ class ModelEvaluator:
             key_iterations = [0, len(monitor.sample_weights_history) // 2, -1]
             data_to_plot = [monitor.sample_weights_history[i] for i in key_iterations]
             labels = [
-                f"第{key_iterations[0]+1}轮",
-                f"第{key_iterations[1]+1}轮",
+                f"第{key_iterations[0] + 1}轮",
+                f"第{key_iterations[1] + 1}轮",
                 f"第{len(monitor.sample_weights_history)}轮",
             ]
 
@@ -413,7 +440,9 @@ class ModelEvaluator:
         axes[0].grid(axis="x", alpha=0.3)
 
         # 子图2: 特征重要性分布
-        axes[1].hist(importances, bins=50, color="darkorange", alpha=0.7, edgecolor="black")
+        axes[1].hist(
+            importances, bins=50, color="darkorange", alpha=0.7, edgecolor="black"
+        )
         axes[1].set_xlabel("重要性分数", fontsize=12)
         axes[1].set_ylabel("特征数量", fontsize=12)
         axes[1].set_title("特征重要性分布", fontsize=14)
@@ -522,9 +551,7 @@ class ModelEvaluator:
             "右上角": importance_map[: h // 2, w // 2 :].mean(),
             "左下角": importance_map[h // 2 :, : w // 2].mean(),
             "右下角": importance_map[h // 2 :, w // 2 :].mean(),
-            "中心区域": importance_map[
-                h // 4 : 3 * h // 4, w // 4 : 3 * w // 4
-            ].mean(),
+            "中心区域": importance_map[h // 4 : 3 * h // 4, w // 4 : 3 * w // 4].mean(),
             "边缘区域": np.concatenate(
                 [
                     importance_map[0, :],  # 上边缘
@@ -568,9 +595,7 @@ class ModelEvaluator:
             class_samples = X_data[class_mask]
 
             if len(class_samples) == 0:
-                axes[i].text(
-                    0.5, 0.5, "无样本", ha="center", va="center", fontsize=12
-                )
+                axes[i].text(0.5, 0.5, "无样本", ha="center", va="center", fontsize=12)
                 axes[i].set_xticks([])
                 axes[i].set_yticks([])
                 continue
@@ -668,7 +693,9 @@ class ModelEvaluator:
         # 统计哪些类别最容易被错误分类
         print("\n最容易被误判的数字 (真实标签):")
         print("-" * 60)
-        unique, counts = np.unique(self.y_test[misclassified_indices], return_counts=True)
+        unique, counts = np.unique(
+            self.y_test[misclassified_indices], return_counts=True
+        )
         sorted_idx = np.argsort(counts)[::-1]
         for i in sorted_idx[:5]:
             print(
@@ -687,7 +714,9 @@ class ModelEvaluator:
 
         print("=" * 60)
 
-    def generate_full_report(self, monitor=None, noise_indices=None, clean_indices=None):
+    def generate_full_report(
+        self, monitor=None, noise_indices=None, clean_indices=None
+    ):
         """
         生成完整的评估报告
 
@@ -816,7 +845,9 @@ def visualize_overfitting_process(
 
     ax1.plot(n_est, train_acc, "b-o", linewidth=2, markersize=8, label="Train Accuracy")
     ax1.plot(n_est, test_acc, "r-s", linewidth=2, markersize=8, label="Test Accuracy")
-    ax1.fill_between(n_est, train_acc, test_acc, alpha=0.3, color="orange", label="Overfitting Gap")
+    ax1.fill_between(
+        n_est, train_acc, test_acc, alpha=0.3, color="orange", label="Overfitting Gap"
+    )
 
     # 标记最佳点
     best_idx = np.argmax(test_acc)
@@ -827,7 +858,9 @@ def visualize_overfitting_process(
 
     ax1.set_xlabel("Number of Weak Learners", fontsize=14)
     ax1.set_ylabel("Accuracy", fontsize=14)
-    ax1.set_title("Learning Curves: Accuracy vs Number of Estimators", fontsize=16, pad=15)
+    ax1.set_title(
+        "Learning Curves: Accuracy vs Number of Estimators", fontsize=16, pad=15
+    )
     ax1.legend(fontsize=12, loc="lower right")
     ax1.grid(True, alpha=0.3)
     ax1.set_ylim([min(test_acc) - 0.05, 1.0])
@@ -838,7 +871,13 @@ def visualize_overfitting_process(
 
     ax2.plot(n_est, overfit, "purple", linewidth=3, marker="o", markersize=8)
     ax2.fill_between(
-        n_est, 0, overfit, where=np.array(overfit) > 0, alpha=0.3, color="red", label="Overfitting Region"
+        n_est,
+        0,
+        overfit,
+        where=np.array(overfit) > 0,
+        alpha=0.3,
+        color="red",
+        label="Overfitting Region",
     )
     ax2.axhline(y=0, color="black", linestyle="--", linewidth=1, alpha=0.5)
 
@@ -879,7 +918,9 @@ def visualize_overfitting_process(
     print(f"\n最佳模型:")
     print(f"  弱学习器数量: {best_n}")
     print(f"  测试集准确率: {best_test_acc:.4f} ({best_test_acc * 100:.2f}%)")
-    print(f"  训练集准确率: {train_acc[best_idx]:.4f} ({train_acc[best_idx] * 100:.2f}%)")
+    print(
+        f"  训练集准确率: {train_acc[best_idx]:.4f} ({train_acc[best_idx] * 100:.2f}%)"
+    )
     print(f"  过拟合程度: {overfit[best_idx]:.4f} ({overfit[best_idx] * 100:.2f}%)")
 
     print(f"\n最小过拟合模型:")
@@ -888,8 +929,12 @@ def visualize_overfitting_process(
     print(f"  测试集准确率: {test_acc[min_overfit_idx]:.4f}")
 
     print(f"\n趋势分析:")
-    print(f"  初始 (n={n_est[0]}): 测试准确率 = {test_acc[0]:.4f}, 过拟合 = {overfit[0]:.4f}")
-    print(f"  最终 (n={n_est[-1]}): 测试准确率 = {test_acc[-1]:.4f}, 过拟合 = {overfit[-1]:.4f}")
+    print(
+        f"  初始 (n={n_est[0]}): 测试准确率 = {test_acc[0]:.4f}, 过拟合 = {overfit[0]:.4f}"
+    )
+    print(
+        f"  最终 (n={n_est[-1]}): 测试准确率 = {test_acc[-1]:.4f}, 过拟合 = {overfit[-1]:.4f}"
+    )
 
     if test_acc[-1] < best_test_acc:
         print(f"  ⚠️ 警告: 测试准确率在 n={best_n} 后开始下降，建议使用早停")
@@ -928,4 +973,3 @@ def quick_evaluate(
     evaluator = ModelEvaluator(clf, X_train, y_train, X_test, y_test)
     evaluator.generate_full_report(monitor, noise_indices, clean_indices)
     return evaluator
-

@@ -1,6 +1,19 @@
 import os
 import pandas as pd
 import joblib
+from typing import Union
+
+from adalab.monitor import BoostMonitor
+
+# 兼容旧 joblib 路径
+import sys
+
+try:
+    from adalab.monitor import BoostMonitor
+
+    sys.modules["src.monitor"] = sys.modules["adalab.monitor"]
+except Exception:
+    pass
 
 
 def load_from_csv(csv_path):
@@ -17,13 +30,13 @@ def load_from_csv(csv_path):
     dict
         包含所有监控数据的字典
     """
-    print(f"📂 Loading from CSV: {csv_path}")
+    print(f"[Viz] Loading from CSV: {csv_path}")
 
     if not os.path.exists(csv_path):
         raise FileNotFoundError(f"CSV file not found: {csv_path}")
 
     df = pd.read_csv(csv_path)
-    print(f"✓ Loaded {len(df)} rounds of training data")
+    print(f"[Viz] Loaded {len(df)} rounds of training data")
 
     # 构建与 BoostMonitor 相同的数据结构
     data = {
@@ -51,7 +64,7 @@ def load_from_csv(csv_path):
         "n_estimators": len(df),
     }
 
-    print(f"✓ Data fields available:")
+    print(f"[Viz] Data fields available:")
     for key, value in data.items():
         if key not in ["rounds", "is_data_noisy", "n_estimators"]:
             status = "✓" if (isinstance(value, list) and len(value) > 0) else "✗"
@@ -60,9 +73,9 @@ def load_from_csv(csv_path):
     return data
 
 
-def load_from_joblib(joblib_path):
+def load_from_joblib(monitor: Union[str, BoostMonitor]):
     """
-    从 joblib 文件加载 BoostMonitor 对象
+    从 BoostMonitor对象或joblib 文件加载 monitor实例中的数据
 
     Parameters
     ----------
@@ -74,13 +87,17 @@ def load_from_joblib(joblib_path):
     dict
         包含所有监控数据的字典
     """
-    print(f"📂 Loading from joblib: {joblib_path}")
-
-    if not os.path.exists(joblib_path):
-        raise FileNotFoundError(f"Joblib file not found: {joblib_path}")
-
-    monitor = joblib.load(joblib_path)
-    print(f"✓ Loaded BoostMonitor object")
+    if isinstance(monitor, str):
+        # 如果 monitor 是路径，加载 joblib 文件
+        print(f"[Viz] Loading monitor from joblib file: {monitor}")
+        monitor: BoostMonitor = joblib.load(monitor)
+    elif isinstance(monitor, BoostMonitor):
+        # 如果 monitor 是 BoostMonitor 实例，直接使用
+        print("[Viz] Using provided BoostMonitor instance.")
+    else:
+        raise ValueError(
+            "monitor must be a BoostMonitor instance or a joblib file path"
+        )
 
     # 从 BoostMonitor 对象提取数据
     data = {
@@ -121,7 +138,7 @@ def load_from_experiment(experiment_name):
     if not os.path.exists(exp_dir):
         raise FileNotFoundError(f"Experiment directory not found: {exp_dir}")
 
-    print(f"📁 Loading from experiment: {experiment_name}")
+    print(f"[Viz] Loading from experiment: {experiment_name}")
 
     # 优先尝试 joblib
     joblib_path = os.path.join(exp_dir, "results", "monitor.joblib")
