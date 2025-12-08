@@ -11,7 +11,6 @@ from skimage.feature import hog
 class DataPreparation:
     def __init__(
         self,
-        # noise_ratio=0.2,
         noise_config={},
         test_size=0.2,
         use_feature="original",
@@ -23,7 +22,6 @@ class DataPreparation:
         # Hu Moments 参数
         hu_log_scale=True,
     ):
-        # self.noise_ratio = noise_ratio
         self.noise_config = noise_config
         self.test_size = test_size
         self.use_feature = use_feature

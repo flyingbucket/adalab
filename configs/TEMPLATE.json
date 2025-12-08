@@ -4,7 +4,16 @@
   },
 
   "data": {
-    "noise_ratio": 0.0,             // 加噪声比例（0~1）
+    // 噪声配置
+    "noise_config": {
+        "label_flip": {"ratio": 0.2},               //标签翻转
+        "gaussian": {"std": 0.05},                  //高斯噪声
+        "salt_pepper": {"amount": 0.02},            //椒盐噪声
+        "contrast": {"factor_range": [0.7, 1.3]},   //对比度
+        "rotate": {"angle_range": 10},              //旋转
+        "blur": {"kernel_size": 3},                 //高斯模糊
+        "brightness": {"shift_range": 0.2}          //亮度
+      },
     "test_size": 0.2,               // 测试集划分比例
     "random_state": 42,             // 随机种子
     "use_feature": "hog",           // 可选： "original" / "hog" / "hu"
