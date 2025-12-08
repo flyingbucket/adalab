@@ -19,6 +19,9 @@ dependencies = [
   "mplfonts",
 ]
 
+[project.optional-dependencies]
+viz = ["matplotlib", "mplfonts", "seaborn"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
