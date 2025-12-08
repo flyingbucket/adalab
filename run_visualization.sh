@@ -4,7 +4,7 @@
 
 set -e
 
-VIS_DIR="visualization"
+VIS_DIR="./experiments/visualization"
 mkdir -p "$VIS_DIR"
 
 echo "================ 批量可视化开始 ================"
