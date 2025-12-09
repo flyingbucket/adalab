@@ -3,16 +3,25 @@ import os
 import joblib
 import lzma
 import time
-import warnings
 
 import numpy as np
-import cv2
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier
 
 from .monitor import BoostMonitor
 from .data import DataPreparation
 from .patch import AdaBoostClfWithMonitor
+from .evaluation import val_after_train_parallel
+
+# 兼容旧 joblib 路径
+import sys
+
+try:
+    from adalab.monitor import BoostMonitor
+
+    sys.modules["src.monitor"] = sys.modules["adalab.monitor"]
+except Exception:
+    pass
 
 
 def load_config(config_path):
@@ -51,26 +60,7 @@ def safe_exp_dir(exp_name):
     return new_exp_dir
 
 
-def build_experiment(config_path):
-    config = load_config(config_path)
-
-    exp_name = config["experiment"]["name"]
-    exp_dir = safe_exp_dir(exp_name)
-
-    os.makedirs(exp_dir, exist_ok=True)
-    config_dump_path = os.path.join(exp_dir, "config.json")
-    with open(config_dump_path, "w") as fw:
-        json.dump(config, fw, indent=4)
-
-    # === 自动创建目录结构 ===
-    ckpt_dir = os.path.join(exp_dir, "checkpoints")
-    result_dir = os.path.join(exp_dir, "results")
-    os.makedirs(ckpt_dir, exist_ok=True)
-    os.makedirs(result_dir, exist_ok=True)
-
-    print(f"[Workflow] experiment dir created: {exp_dir}")
-
-    # === 1. 数据准备 ===
+def prep_data_from_config(config):
     data_cfg = config["data"]
 
     # === 读取 HOG 参数 ===
@@ -96,14 +86,65 @@ def build_experiment(config_path):
         hu_log_scale=hu_log_scale,
     )
 
-    (
-        X_train,
-        X_test,
-        y_train,
-        y_test,
-        noise_idx,
-        clean_idx,
-    ) = prep.prepare()
+    return (*prep.prepare(), prep)
+
+
+def build_experiment(config_path):
+    config = load_config(config_path)
+
+    exp_name = config["experiment"]["name"]
+    exp_dir = safe_exp_dir(exp_name)
+
+    os.makedirs(exp_dir, exist_ok=True)
+    config_dump_path = os.path.join(exp_dir, "config.json")
+    with open(config_dump_path, "w") as fw:
+        json.dump(config, fw, indent=4)
+
+    # === 自动创建目录结构 ===
+    ckpt_dir = os.path.join(exp_dir, "checkpoints")
+    result_dir = os.path.join(exp_dir, "results")
+    os.makedirs(ckpt_dir, exist_ok=True)
+    os.makedirs(result_dir, exist_ok=True)
+
+    print(f"[Workflow] experiment dir created: {exp_dir}")
+
+    # === 1. 数据准备 ===
+    X_train, X_test, y_train, y_test, noise_idx, clean_idx, prep = (
+        prep_data_from_config(config)
+    )
+    # data_cfg = config["data"]
+    #
+    # # === 读取 HOG 参数 ===
+    # hog_cfg = data_cfg.get("hog_params", {})
+    # hog_orient = hog_cfg.get("orientations", 9)
+    # hog_ppc = tuple(hog_cfg.get("pixels_per_cell", (4, 4)))
+    # hog_cpb = tuple(hog_cfg.get("cells_per_block", (2, 2)))
+    #
+    # # === 读取 HU 参数 ===
+    # hu_cfg = data_cfg.get("hu_params", {})
+    # hu_log_scale = hu_cfg.get("log_scale", True)
+    #
+    # # === 构建 DataPreparation ===
+    # prep = DataPreparation(
+    #     # noise_ratio=data_cfg["noise_ratio"],
+    #     noise_config=data_cfg["noise_config"],
+    #     test_size=data_cfg["test_size"],
+    #     use_feature=data_cfg.get("use_feature", "original"),
+    #     random_state=data_cfg["random_state"],
+    #     hog_orientations=hog_orient,
+    #     hog_pixels_per_cell=hog_ppc,
+    #     hog_cells_per_block=hog_cpb,
+    #     hu_log_scale=hu_log_scale,
+    # )
+    #
+    # (
+    #     X_train,
+    #     X_test,
+    #     y_train,
+    #     y_test,
+    #     noise_idx,
+    #     clean_idx,
+    # ) = prep.prepare()
 
     # === 构造 Monitor 和 模型===
     monitor_cfg = config["monitor"]
@@ -166,6 +207,105 @@ def build_experiment(config_path):
         result_csv,
         exp_dir,
         result_dir,
+    )
+
+
+def train_and_save(config_path: str):
+    """
+    构建实验、训练模型、保存 model / monitor（含未压缩和压缩版）。
+
+    返回:
+        clf: 训练好的分类模型
+        monitor: BoostMonitor 对象
+        data:Tuple of (X_train, X_test, y_train, y_test, noise_idx, clean_idx),
+        paths: 包含所有输出文件路径的字典
+    """
+    # ========= 1. 构建实验 =========
+    (
+        clf,
+        monitor,
+        prep,
+        (X_train, X_test, y_train, y_test, noise_idx, clean_idx),
+        result_csv,
+        exp_dir,
+        result_dir,
+    ) = build_experiment(config_path)
+
+    print("[Workflow] \033[33mTraining Started...\033[0m")
+    clf.fit(X_train, y_train)
+    print("[Workflow] \033[33mTraining Finished!\033[0m")
+
+    config = load_config(config_path)
+    monitor_conf = config["monitor"]
+    val_freq = monitor_conf.get("val_freq", 10)
+    val_n_jobs = monitor_conf.get("val_n_jobs", 4)
+    # 保存 monitor 结果
+    if monitor is not None:
+        alphas = np.asarray(monitor.alpha_history)
+
+        print(
+            "[workflow] \033[33mValidiating on training data after model fitted...\033[0m"
+        )
+        acc_curv_train, f1_curv_train, val_idx_train = val_after_train_parallel(
+            clf, alphas, X_train, y_train, val_freq, val_n_jobs
+        )
+        monitor.acc_on_train_data = acc_curv_train.tolist()
+        monitor.f1_on_training_data = f1_curv_train.tolist()
+        monitor.val_idx = val_idx_train.tolist()
+        print("[workflow] \033[33mValidiation on training data finished!\033[0m")
+
+        print(
+            "[workflow] \033[33mValidiating on testing data after model fitted...\033[0m"
+        )
+        acc_curv_test, f1_curv_test, _ = val_after_train_parallel(
+            clf, alphas, X_test, y_test, val_freq, val_n_jobs
+        )
+        monitor.val_acc_history = acc_curv_test.tolist()
+        monitor.val_f1_history = f1_curv_test.tolist()
+        print("[workflow] \033[33mValidiation on testing data finished!\033[0m")
+
+        monitor.dump(result_csv)
+        raw_monitor_path = os.path.join(result_dir, "monitor.joblib")
+        joblib.dump(monitor, raw_monitor_path)
+        print(f"[Workflow] Uncompressed monitor joblib saved to : {raw_monitor_path}")
+        compressed_monitor_path = dump_compressed(monitor, raw_monitor_path)
+        print(
+            f"[Workflow] compressed monitor joblib saved to : {compressed_monitor_path}"
+        )
+    else:
+        raw_monitor_path = None
+        compressed_monitor_path = None
+        result_csv = None
+
+    # ========= 2. 保存未压缩 joblib =========
+    raw_clf_path = os.path.join(result_dir, "model.joblib")
+
+    joblib.dump(clf, raw_clf_path)
+
+    print(f"[Workflow] Uncompressed model joblib saved to : {raw_clf_path}")
+
+    # ========= 3. 保存压缩版 =========
+    compressed_clf_path = dump_compressed(clf, raw_clf_path)
+
+    print(f"[Workflow] compressed model joblib saved to : {compressed_clf_path}")
+
+    # ========= 4. 返回结果 =========
+    paths = {
+        "raw_clf": raw_clf_path,
+        "raw_monitor": raw_monitor_path,
+        "compressed_clf": compressed_clf_path,
+        "compressed_monitor": compressed_monitor_path,
+        "monitor_csv": result_csv,
+        "experiment_dir": exp_dir,
+        "result_dir": result_dir,
+    }
+
+    return (
+        clf,
+        monitor,
+        prep,
+        (X_train, X_test, y_train, y_test, noise_idx, clean_idx),
+        paths,
     )
 
 
@@ -263,75 +403,3 @@ def load_compressed(filepath: str):
         obj = joblib.load(f)
     print(f"[Workflow] loaded compressed joblib from : {filepath}")
     return obj
-
-
-def train_and_save(config_path: str):
-    """
-    构建实验、训练模型、保存 model / monitor（含未压缩和压缩版）。
-
-    返回:
-        clf: 训练好的分类模型
-        monitor: BoostMonitor 对象
-        data:Tuple of (X_train, X_test, y_train, y_test, noise_idx, clean_idx),
-        paths: 包含所有输出文件路径的字典
-    """
-    # ========= 1. 构建实验 =========
-    (
-        clf,
-        monitor,
-        prep,
-        (X_train, X_test, y_train, y_test, noise_idx, clean_idx),
-        result_csv,
-        exp_dir,
-        result_dir,
-    ) = build_experiment(config_path)
-
-    print("[Workflow] \033[33mTraining Started...\033[0m")
-    clf.fit(X_train, y_train)
-    print("[Workflow] \033[33mTraining Finished...\033[0m")
-
-    # 保存 monitor 结果
-    if monitor is not None:
-        monitor.dump(result_csv)
-        raw_monitor_path = os.path.join(result_dir, "monitor.joblib")
-        joblib.dump(monitor, raw_monitor_path)
-        print(f"[Workflow] Uncompressed monitor joblib saved to : {raw_monitor_path}")
-        compressed_monitor_path = dump_compressed(monitor, raw_monitor_path)
-        print(
-            f"[Workflow] compressed monitor joblib saved to : {compressed_monitor_path}"
-        )
-    else:
-        raw_monitor_path = None
-        compressed_monitor_path = None
-        result_csv = None
-
-    # ========= 2. 保存未压缩 joblib =========
-    raw_clf_path = os.path.join(result_dir, "model.joblib")
-
-    joblib.dump(clf, raw_clf_path)
-
-    print(f"[Workflow] Uncompressed model joblib saved to : {raw_clf_path}")
-
-    # ========= 3. 保存压缩版 =========
-    compressed_clf_path = dump_compressed(clf, raw_clf_path)
-
-    print(f"[Workflow] compressed model joblib saved to : {compressed_clf_path}")
-
-    # ========= 4. 返回结果 =========
-    paths = {
-        "raw_clf": raw_clf_path,
-        "raw_monitor": raw_monitor_path,
-        "compressed_clf": compressed_clf_path,
-        "compressed_monitor": compressed_monitor_path,
-        "monitor_csv": result_csv,
-        "experiment_dir": exp_dir,
-        "result_dir": result_dir,
-    }
-
-    return (
-        clf,
-        monitor,
-        prep,
-        (X_train, X_test, y_train, y_test, noise_idx, clean_idx),
-        paths,
-    )

@@ -1,6 +1,6 @@
 {
   "experiment": {
-    "name": "test_end2end"
+    "name": "test_end2end_val_after_train"
   },
 
   "data": {
@@ -24,14 +24,16 @@
 
   "monitor": {
     "is_data_noisy": true,
-    "checkpoint_interval": 5
+    "checkpoint_interval": 10,
+    "val_freq": 10,
+    "val_n_jobs": 8
   },
 
   "model": {
     "estimator": {
       "max_depth": 2
     },
-    "n_estimators": 10,
+    "n_estimators": 50,
     "learning_rate": 0.5,
     "random_state": 42
   }

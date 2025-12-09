@@ -32,6 +32,8 @@ class BoostMonitor:
         self.acc_on_train_data = []
         self.f1_on_training_data = []
 
+        # validation index
+        self.val_idx = []
         # checkpoint
         self.checkpoint_interval = checkpoint_interval
         self.checkpoint_prefix = checkpoint_prefix
@@ -157,10 +159,10 @@ class BoostMonitor:
             "round": list(range(1, rounds + 1)),
             "weighted_error": self.error_history,
             "alpha": self.alpha_history,
-            "acc_on_training_data": self.acc_on_train_data,
-            "f1_on_training_data": self.f1_on_training_data,
-            "val_acc_history": self.val_acc_history,
-            "val_f1_history": self.val_f1_history,
+            # "acc_on_training_data": self.acc_on_train_data,
+            # "f1_on_training_data": self.f1_on_training_data,
+            # "val_acc_history": self.val_acc_history,
+            # "val_f1_history": self.val_f1_history,
         }
 
         # 普通错误率
@@ -203,8 +205,8 @@ class BoostMonitor:
             "round": list(range(1, rounds + 1)),
             "weighted_error": self.error_history,
             "alpha": self.alpha_history,
-            "acc_on_training_data": self.acc_on_train_data,
-            "f1_on_training_data": self.f1_on_training_data,
+            # "acc_on_training_data": self.acc_on_train_data,
+            # "f1_on_training_data": self.f1_on_training_data,
         }
 
         # 普通错误率（unweighted）
