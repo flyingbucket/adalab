@@ -125,16 +125,17 @@ class AdaBoostClfWithMonitor(AdaBoostClassifier):
                 np.log(sample_weight)
                 + estimator_weight * incorrect * (sample_weight > 0)
             )
-
+        # validation can be done AFTER training !
         # validation
-        self._run_validation(iboost)
-        self._val_on_train_data(iboost, X, y)
+        # self._run_validation(iboost)
+        # self._val_on_train_data(iboost, X, y)
         # save monitor data checkpoint
         self._monitor.auto_checkpoint(iboost)
         return sample_weight, estimator_weight, estimator_error
 
     def _run_validation(self, iboost):
-        """Run validation after each boost round."""
+        """Deprecated,validation will be done after training ,
+        Run validation after each boost round."""
         if self.X_val is None or self.y_val is None:
             return
 
@@ -150,7 +151,8 @@ class AdaBoostClfWithMonitor(AdaBoostClassifier):
             self._monitor.record_validation(iboost, acc, f1)
 
     def _val_on_train_data(self, iboost, X, y):
-        """Calculate scores on training data."""
+        """Deprecated,validation will be done after training ,
+        Calculate scores on training data."""
 
         # 当前模型的集成已经形成，可以直接 predict
         y_pred = self.predict(X)

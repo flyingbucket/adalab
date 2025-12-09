@@ -16,6 +16,7 @@ from sklearn.metrics import (
     f1_score,
 )
 import seaborn as sns
+from joblib import Parallel, delayed
 
 # 初始化字体支持
 # init()  # 如需中文支持可取消注释
@@ -42,6 +43,134 @@ def evaluate(y_true, y_pred, title="Evaluation"):
         "recall_macro": rec_macro,
         "f1_macro": f1_macro,
     }
+
+
+def _compute_round_metric(t, alphas, est_preds, classes, n_classes, y_indices):
+    N = len(y_indices)
+    scores = np.zeros((N, n_classes), dtype=float)
+    weight_sum = np.sum(alphas[: t + 1])
+
+    for k in range(t + 1):
+        w = alphas[k]
+        pred_k = est_preds[k]
+        mask = pred_k[:, None] == classes[None, :]
+        contrib = np.where(mask, w, -w / (n_classes - 1))
+        scores += contrib
+
+    scores /= weight_sum
+
+    # predict
+    if n_classes == 2:
+        tmp = scores.copy()
+        tmp[:, 0] *= -1
+        df = tmp.sum(axis=1)
+        pred_idx = (df > 0).astype(int)
+    else:
+        pred_idx = np.argmax(scores, axis=1)
+
+    acc = np.mean(pred_idx == y_indices)
+    y_pred_labels = classes[pred_idx]
+    f1 = f1_score(y_indices, pred_idx, average="macro", zero_division=0)
+
+    return acc, f1
+
+
+def val_after_train_parallel(clf, alphas, X, y, val_freq=20, n_jobs=-1):
+    estimators = clf.estimators_
+    T = len(estimators)
+    N = X.shape[0]
+    classes = clf.classes_
+    n_classes = clf.n_classes_
+
+    val_idx = np.arange(0, T, val_freq)
+    num_points = len(val_idx)
+
+    # 预计算弱分类器预测
+    est_preds = np.zeros((T, N), dtype=classes.dtype)
+    for t, est in enumerate(estimators):
+        est_preds[t] = est.predict(X)
+
+    y_indices = np.searchsorted(classes, y)
+
+    # 并行计算每一个 t
+    results = Parallel(n_jobs=n_jobs)(
+        delayed(_compute_round_metric)(
+            t, alphas, est_preds, classes, n_classes, y_indices
+        )
+        for t in val_idx
+    )
+
+    acc_curve = np.array([r[0] for r in results])
+    f1_curve = np.array([r[1] for r in results])
+
+    return acc_curve, f1_curve, val_idx
+
+
+def val_after_train(clf, alphas, X, y, val_freq=20):
+    """
+    后验评估：每 val_freq 轮计算一次 metric。
+    返回:
+        acc_curve: shape (num_points,)
+        f1_curve:  shape (num_points,)
+        val_idx:   这些点对应的轮次索引，用于绘图或分析
+    """
+
+    estimators = clf.estimators_
+    T = len(estimators)
+    N = X.shape[0]
+    classes = clf.classes_
+    n_classes = clf.n_classes_
+
+    # 1) 决定最终输出的 index（非常关键）
+    val_idx = np.arange(0, T, val_freq)  # e.g., 0, 20, 40...
+    # 可选：包含最后一轮
+    # val_idx = np.unique(np.append(val_idx, T - 1))
+
+    num_points = len(val_idx)
+
+    # 2) 初始化结果数组（可并行）
+    acc_curve = np.zeros(num_points)
+    f1_curve = np.zeros(num_points)
+
+    # 3) 预计算弱学习器预测
+    est_preds = np.zeros((T, N), dtype=classes.dtype)
+    for t, est in enumerate(estimators):
+        est_preds[t] = est.predict(X)
+
+    # 4) y → 类别索引
+    y_indices = np.searchsorted(classes, y)
+
+    # 5) 核心计算（可并行化）
+    for i, t in enumerate(val_idx):
+        scores = np.zeros((N, n_classes), dtype=float)
+        weight_sum = np.sum(alphas[: t + 1])
+
+        for k in range(t + 1):
+            w = alphas[k]
+            pred_k = est_preds[k]
+            mask = pred_k[:, None] == classes[None, :]
+            contrib = np.where(mask, w, -w / (n_classes - 1))
+            scores += contrib
+
+        scores /= weight_sum
+
+        # 分类预测
+        if n_classes == 2:
+            tmp = scores.copy()
+            tmp[:, 0] *= -1
+            df = tmp.sum(axis=1)
+            pred_idx = (df > 0).astype(int)
+        else:
+            pred_idx = np.argmax(scores, axis=1)
+
+        # accuracy
+        acc_curve[i] = np.mean(pred_idx == y_indices)
+
+        # f1
+        y_pred_labels = classes[pred_idx]
+        f1_curve[i] = f1_score(y, y_pred_labels, average="macro", zero_division=0)
+
+    return acc_curve, f1_curve, val_idx
 
 
 class ModelEvaluator:
