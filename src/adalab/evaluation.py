@@ -82,7 +82,8 @@ def val_after_train_parallel(clf, alphas, X, y, val_freq=20, n_jobs=-1):
     classes = clf.classes_
     n_classes = clf.n_classes_
 
-    val_idx = np.arange(0, T, val_freq)
+    val_idx = np.arange(val_freq - 1, T, val_freq)
+    val_idx = np.unique(np.append(val_idx, T - 1))
     num_points = len(val_idx)
 
     # 预计算弱分类器预测
@@ -121,26 +122,26 @@ def val_after_train(clf, alphas, X, y, val_freq=20):
     classes = clf.classes_
     n_classes = clf.n_classes_
 
-    # 1) 决定最终输出的 index（非常关键）
-    val_idx = np.arange(0, T, val_freq)  # e.g., 0, 20, 40...
-    # 可选：包含最后一轮
-    # val_idx = np.unique(np.append(val_idx, T - 1))
+    # val index
+    val_idx = np.arange(val_freq - 1, T, val_freq)
+    # always include last
+    val_idx = np.unique(np.append(val_idx, T - 1))
 
     num_points = len(val_idx)
 
-    # 2) 初始化结果数组（可并行）
+    # initialize results arrs
     acc_curve = np.zeros(num_points)
     f1_curve = np.zeros(num_points)
 
-    # 3) 预计算弱学习器预测
+    # pre calculate pred of each estimator
     est_preds = np.zeros((T, N), dtype=classes.dtype)
     for t, est in enumerate(estimators):
         est_preds[t] = est.predict(X)
 
-    # 4) y → 类别索引
+    # y → 类别索引
     y_indices = np.searchsorted(classes, y)
 
-    # 5) 核心计算（可并行化）
+    # val kernel ,could be running in SIMD
     for i, t in enumerate(val_idx):
         scores = np.zeros((N, n_classes), dtype=float)
         weight_sum = np.sum(alphas[: t + 1])
