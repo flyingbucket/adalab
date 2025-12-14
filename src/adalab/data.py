@@ -1,3 +1,15 @@
+"""
+MNIST 数据准备、噪声注入与特征提取。
+
+本模块负责：
+- 下载与划分 MNIST 数据集
+- 按配置向训练集注入标签或像素级噪声
+- 提取原始像素、HOG 或 Hu Moments 特征
+- 处理外部课程或真实拍照数字数据
+
+该模块为实验提供统一、可复现的数据输入。
+"""
+
 from __future__ import annotations
 import os
 import warnings
@@ -16,6 +28,20 @@ Int64Array = NDArray[np.int64]
 
 
 def preprocess_for_mnist(path):
+    """将任意单张数字图片预处理为 MNIST 风格输入。
+
+    该函数用于将真实拍照或扫描的数字图像转换为
+    与 MNIST 数据集一致的 28×28、黑底白字、归一化格式，
+    主要用于课程数据或外部数据的推理测试。
+
+    Args:
+        path (str): 输入图像文件路径。
+
+    Returns:
+        tuple:
+            - x (np.ndarray): 展平后的特征向量，形状为 (1, 784)，取值范围 [0, 1]。
+            - canvas (np.ndarray): 28×28 的中间灰度图像（uint8），便于可视化调试。
+    """
     img = cv2.imread(path)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -67,7 +93,25 @@ def preprocess_for_mnist(path):
 
 
 class DataPreparation:
-    # 数据本体
+    """MNIST 数据准备与噪声注入调度器。
+
+    该类负责完成一次实验中所有与数据相关的工作，包括：
+    - 下载 MNIST 数据集
+    - 划分训练集与测试集
+    - 按配置向训练集注入噪声
+    - 提取特征（原始像素 / HOG / Hu Moments）
+
+    该类是 workflow 中数据准备阶段的唯一入口。
+
+    Attributes:
+        X_train (FloatArray): 训练集特征矩阵。
+        X_test (FloatArray): 测试集特征矩阵。
+        y_train (Int64Array): 训练集标签（可能包含噪声）。
+        y_test (Int64Array): 测试集标签（始终为干净标签）。
+        train_noise_indices (Int64Array): 训练集中噪声样本的索引。
+        train_clean_indices (Int64Array): 训练集中干净样本的索引。
+    """
+
     X_train: FloatArray
     X_test: FloatArray
     y_train: Int64Array
@@ -90,6 +134,18 @@ class DataPreparation:
         # Hu Moments 参数
         hu_log_scale=True,
     ):
+        """初始化数据准备器。
+
+        Args:
+            noise_config (dict, optional): 噪声配置字典，用于控制噪声类型与比例。
+            test_size (float, optional): 测试集比例，默认 0.2。
+            use_feature (str, optional): 特征类型，可选 "original"、"hog"、"hu"。
+            random_state (int, optional): 随机种子。
+            hog_orientations (int, optional): HOG 特征方向数。
+            hog_pixels_per_cell (tuple, optional): HOG 每个 cell 的像素大小。
+            hog_cells_per_block (tuple, optional): HOG 每个 block 的 cell 数。
+            hu_log_scale (bool, optional): 是否对 Hu Moments 进行 log 变换。
+        """
         self.noise_config = noise_config or {}
         self.test_size = test_size
         self.use_feature = use_feature
@@ -123,6 +179,11 @@ class DataPreparation:
         self.y_raw = y
 
     def split(self):
+        """将原始 MNIST 数据划分为训练集与测试集。
+
+        划分结果会同时保存样本在原始数据中的索引，
+        以便后续准确标记训练集内部的噪声样本位置。
+        """
         X_train, X_test, y_train, y_test, train_idx, test_idx = train_test_split(
             self.X_raw,
             self.y_raw,  # 全干净标签
@@ -140,8 +201,12 @@ class DataPreparation:
         print(f"[Data] Split done: Train={len(X_train)}, Test={len(X_test)}")
 
     def inject_noise(self):
-        """Add noise to training data
-        set self.X_train, self.y_train, self.noise_indices
+        """向训练集注入噪声。
+
+        根据 ``noise_config`` 中的配置，
+        对训练集样本施加标签噪声或像素级扰动。
+
+        噪声仅作用于训练集，测试集始终保持干净标签。
         """
         print("[Data] Applying perturbations...")
 
@@ -224,6 +289,14 @@ class DataPreparation:
 
     # 特征提取
     def extract_hog(self, X):
+        """从输入图像中提取 HOG 特征。
+
+        Args:
+            X (np.ndarray): 展平的 MNIST 图像数据。
+
+        Returns:
+            np.ndarray: HOG 特征矩阵。
+        """
         X_reshaped = X.reshape(-1, 28, 28)
         feats = []
         for img in X_reshaped:
@@ -238,6 +311,14 @@ class DataPreparation:
         return np.array(feats)
 
     def extract_hu(self, X):
+        """从输入图像中提取 Hu Moments 特征。
+
+        Args:
+            X (np.ndarray): 展平的 MNIST 图像数据。
+
+        Returns:
+            np.ndarray: Hu Moments 特征矩阵。
+        """
         X_reshaped = X.reshape(-1, 28, 28)
         feats = []
         for img in X_reshaped:
@@ -248,6 +329,13 @@ class DataPreparation:
         return np.array(feats)
 
     def apply_feature(self):
+        """根据配置对训练集与测试集应用特征提取。
+
+        特征类型由 ``self.use_feature`` 控制：
+        - "original": 使用原始像素
+        - "hog": 使用 HOG 特征
+        - "hu": 使用 Hu Moments
+        """
         if self.use_feature == "original":
             print("[Data] No feature extracted,using original images")
             pass
@@ -270,6 +358,20 @@ class DataPreparation:
     def prepare(
         self,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """执行完整的数据准备流程。
+
+        该方法是数据准备阶段的统一入口，
+        会依次执行下载、划分、噪声注入与特征提取。
+
+        Returns:
+            tuple:
+                - X_train: 训练集特征
+                - X_test: 测试集特征
+                - y_train: 训练集标签
+                - y_test: 测试集标签
+                - train_noise_indices: 训练集噪声样本索引
+                - train_clean_indices: 训练集干净样本索引
+        """
         self.download_mnist()
         self.split()
         self.inject_noise()
@@ -285,21 +387,19 @@ class DataPreparation:
         )
 
     def prepare_course_data(self, folder):
-        """
-        处理课程老师提供的真实拍照数字数据。
-        不做 train_split，不加噪声，只做预处理 + 特征提取。
+        """处理课程提供的真实拍照数字数据。
 
-        参数
-        ----
-        folder : str
-            文件夹路径，文件名必须为 0.png 1.png ... 这样的格式
+        该方法用于对外部真实图像数据进行推理测试，
+        不进行训练/测试划分，也不注入噪声，
+        仅执行 MNIST 风格预处理与特征提取。
 
-        返回
-        ----
-        X : ndarray
-            特征矩阵（维度与训练特征保持一致）
-        y : ndarray
-            标签（来自文件名）
+        Args:
+            folder (str): 图像文件夹路径，文件名需为标签值。
+
+        Returns:
+            tuple:
+                - X (np.ndarray): 特征矩阵（与训练特征维度一致）
+                - y (np.ndarray): 标签数组
         """
         print(f"[Data] Loading course dataset from: {folder}")
 
@@ -337,7 +437,11 @@ class DataPreparation:
 
 
 class MNISTPerturber:
-    """MNIST数据扰动器"""
+    """MNIST 数据扰动器。
+
+    提供多种用于鲁棒性实验的标签与像素级扰动方法，
+    仅作为 DataPreparation 的内部组件使用。
+    """
 
     def __init__(self, random_state=42):
         """

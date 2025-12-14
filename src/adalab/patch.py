@@ -1,3 +1,14 @@
+"""
+AdaBoost 训练过程插桩与监控扩展。
+
+本模块通过扩展 sklearn 的 AdaBoostClassifier，
+在不改变算法行为的前提下，
+对每一轮 boost 过程进行监控与数据记录。
+
+该模块属于 adalab 的核心研究实现，
+用于分析权重更新、噪声放大与过拟合现象。
+"""
+
 import numpy as np
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.metrics import accuracy_score, f1_score
@@ -7,6 +18,27 @@ ori_boost = AdaBoostClassifier._boost
 
 
 def boost_with_monitor(self, iboost, X, y, sample_weight, random_state):
+    """在原始 AdaBoost `_boost` 基础上插入训练监控逻辑。
+
+    该函数通过在 boost 轮次前后调用 BoostMonitor，
+    记录样本权重、误差与弱分类器权重等信息。
+
+    该接口主要用于兼容或实验性场景，
+    当前项目主流程推荐使用 ``AdaBoostClfWithMonitor`` 子类方式。
+
+    Args:
+        iboost (int): 当前 boost 轮次（从 0 开始）。
+        X (np.ndarray): 训练特征数据。
+        y (np.ndarray): 训练标签。
+        sample_weight (np.ndarray): 当前轮次的样本权重。
+        random_state: 随机状态对象。
+
+    Returns:
+        tuple:
+            - sample_weight_new: 更新后的样本权重
+            - estimator_weight: 当前弱分类器权重（alpha）
+            - estimator_error: 当前轮次的加权错误率
+    """
     # ---- 记录 Boost 前 ----
     if hasattr(self, "_monitor"):
         self._monitor.record_before_boost(sample_weight)
@@ -26,6 +58,21 @@ def boost_with_monitor(self, iboost, X, y, sample_weight, random_state):
 
 
 class AdaBoostClfWithMonitor(AdaBoostClassifier):
+    """带训练监控功能的 AdaBoostClassifier 扩展。
+
+    该类通过重写 ``_boost`` 方法，
+    在每一轮 AdaBoost 训练过程中自动记录关键信息到 BoostMonitor，
+    包括样本权重变化、误差指标与弱分类器权重。
+
+    该类在行为上与 sklearn 的 ``AdaBoostClassifier`` 保持一致，
+    仅在训练过程中增加监控与数据记录能力。
+
+    Attributes:
+        _monitor (BoostMonitor): 用于记录训练过程信息的监控器实例。
+        X_val (Optional[np.ndarray]): 验证集特征（已弃用，仅兼容旧代码）。
+        y_val (Optional[np.ndarray]): 验证集标签（已弃用，仅兼容旧代码）。
+    """
+
     def __init__(
         self,
         _monitor: BoostMonitor,
@@ -38,6 +85,18 @@ class AdaBoostClfWithMonitor(AdaBoostClassifier):
         algorithm="deprecated",
         random_state=None,
     ):
+        """初始化带监控功能的 AdaBoost 分类器。
+
+        Args:
+            _monitor (BoostMonitor): 训练过程监控器实例。
+            X_val (np.ndarray, optional): 验证集特征（已弃用）。
+            y_val (np.ndarray, optional): 验证集标签（已弃用）。
+            estimator: 基学习器实例。
+            n_estimators (int, optional): boost 轮数。
+            learning_rate (float, optional): 学习率。
+            algorithm (str, optional): AdaBoost 算法类型（保留参数）。
+            random_state (int, optional): 随机种子。
+        """
         super().__init__(
             estimator,
             n_estimators=n_estimators,
@@ -50,6 +109,25 @@ class AdaBoostClfWithMonitor(AdaBoostClassifier):
         self.y_val = y_val
 
     def _boost(self, iboost, X, y, sample_weight, random_state):
+        """执行单轮 AdaBoost 训练并记录监控数据。
+
+        该方法重写自 sklearn 的 ``AdaBoostClassifier._boost``，
+        在不改变算法行为的前提下，
+        在 boost 前后自动调用 BoostMonitor 记录关键信息。
+
+        Args:
+            iboost (int): 当前 boost 轮次（从 0 开始）。
+            X (np.ndarray): 训练特征数据。
+            y (np.ndarray): 训练标签。
+            sample_weight (np.ndarray): 当前轮次的样本权重。
+            random_state: 随机状态对象。
+
+        Returns:
+            tuple:
+                - sample_weight: 更新后的样本权重
+                - estimator_weight: 当前弱分类器权重（alpha）
+                - estimator_error: 当前轮次的加权错误率
+        """
         # ===== BEFORE BOOST =====
         if hasattr(self, "_monitor"):
             self._monitor.record_before_boost(sample_weight)
@@ -134,8 +212,19 @@ class AdaBoostClfWithMonitor(AdaBoostClassifier):
         return sample_weight, estimator_weight, estimator_error
 
     def _run_validation(self, iboost):
-        """Deprecated,validation will be done after training ,
-        Run validation after each boost round."""
+        """在训练过程中执行单轮验证评估。
+
+        .. deprecated::
+            该方法已弃用
+
+        当前版本中，所有验证评估统一在模型训练完成后执行，
+        使用 ``val_after_train`` 或 ``val_after_train_parallel`` 生成性能曲线。
+
+        保留该方法仅用于兼容早期实验代码。
+
+        Args:
+            iboost (int): 当前 boost 轮次。
+        """
         if self.X_val is None or self.y_val is None:
             return
 
@@ -151,8 +240,21 @@ class AdaBoostClfWithMonitor(AdaBoostClassifier):
             self._monitor.record_validation(iboost, acc, f1)
 
     def _val_on_train_data(self, iboost, X, y):
-        """Deprecated,validation will be done after training ,
-        Calculate scores on training data."""
+        """【已弃用】在训练过程中评估训练集性能。
+
+        .. deprecated::
+            该方法已弃用，不再推荐使用。
+
+        当前版本中，训练集性能评估统一在训练完成后执行，
+        并以曲线形式写入 BoostMonitor。
+
+        保留该方法仅用于兼容早期实验代码。
+
+        Args:
+            iboost (int): 当前 boost 轮次。
+            X (np.ndarray): 训练特征数据。
+            y (np.ndarray): 训练标签。
+        """
 
         # 当前模型的集成已经形成，可以直接 predict
         y_pred = self.predict(X)
