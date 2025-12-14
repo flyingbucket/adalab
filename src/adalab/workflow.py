@@ -108,8 +108,11 @@ def is_effectively_empty(dir_path):
         return True
 
     for root, dirs, files in os.walk(dir_path):
-        if files:
-            return False
+        if root == dir_path and len(files) == 1 and files[0] == "config.json":
+            continue
+        else:
+            if files:
+                return False
     return True
 
 
@@ -167,7 +170,6 @@ def build_experiment(config_path):
     exp_name = config["experiment"]["name"]
     base_dir = config["experiment"].get("base_dir", "experiments")
     layout = ExperimentPaths.create(exp_name, base_dir=base_dir)
-
     with open(layout.config_path, "w") as fw:
         json.dump(config, fw, indent=4)
 
@@ -245,7 +247,7 @@ def train_and_save(config_path: str):
     val_freq = monitor_conf.get("val_freq", 10)
     val_n_jobs = monitor_conf.get("val_n_jobs", 4)
 
-    # 保存 monitor 结果
+    # val and save monitor results
     if monitor is not None:
         alphas = np.asarray(monitor.alpha_history)
 

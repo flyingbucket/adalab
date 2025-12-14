@@ -76,11 +76,10 @@ def load_compressed_chunks(basepath: str):
     return obj
 
 
-def dump_compressed(obj, filepath: str):
+def dump_compressed(obj, compressed_path: str):
     """
     使用 lzma 压缩并保存任意 Python 对象
     """
-    compressed_path = filepath + ".xz"
 
     with lzma.open(compressed_path, "wb") as f:
         joblib.dump(obj, f)

@@ -152,11 +152,7 @@ class DataPreparation:
         noise_items = [(k, v) for k, v in self.noise_config.items() if k != "ratio"]
         ratio = float(self.noise_config.get("ratio", 0.0))
         # 若无 noise_config，直接返回
-        if (
-            len(self.noise_config) == 0
-            or self.noise_config["ratio"] == 0
-            or len(noise_items) == 0
-        ):
+        if len(self.noise_config) == 0 or ratio == 0 or len(noise_items) == 0:
             print("[Data] No perturbations applied.")
             self.X_train = X
             self.y_train = y
