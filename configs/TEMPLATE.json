@@ -6,7 +6,8 @@
   "data": {
     // 噪声配置
     "noise_config": {
-        "label_flip": {"ratio": 0.2},               //标签翻转
+        "ratio": 0.2
+        "label_flip": true,               //标签翻转
         "gaussian": {"std": 0.05},                  //高斯噪声
         "salt_pepper": {"amount": 0.02},            //椒盐噪声
         "contrast": {"factor_range": [0.7, 1.3]},   //对比度
