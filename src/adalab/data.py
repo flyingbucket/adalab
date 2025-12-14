@@ -1,11 +1,18 @@
+from __future__ import annotations
 import os
 import warnings
+from typing import Any, Dict, Tuple, Optional
 
 import numpy as np
 import cv2
 from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
 from skimage.feature import hog
+from numpy.typing import NDArray
+
+FloatArray = NDArray[np.floating]
+IntArray = NDArray[np.integer]
+Int64Array = NDArray[np.int64]
 
 
 def preprocess_for_mnist(path):
@@ -60,9 +67,19 @@ def preprocess_for_mnist(path):
 
 
 class DataPreparation:
+    # 数据本体
+    X_train: FloatArray
+    X_test: FloatArray
+    y_train: Int64Array
+    y_test: Int64Array
+
+    # 噪声索引
+    train_noise_indices: Int64Array
+    train_clean_indices: Int64Array
+
     def __init__(
         self,
-        noise_config={},
+        noise_config: Optional[Dict[str, Any]] = None,
         test_size=0.2,
         use_feature="original",
         random_state=42,
@@ -73,7 +90,7 @@ class DataPreparation:
         # Hu Moments 参数
         hu_log_scale=True,
     ):
-        self.noise_config = noise_config
+        self.noise_config = noise_config or {}
         self.test_size = test_size
         self.use_feature = use_feature
         self.random_state = random_state
@@ -86,9 +103,14 @@ class DataPreparation:
         # Hu settings
         self.hu_log_scale = hu_log_scale
 
-        # 保存噪声索引
-        self.train_noise_indices = None
-        self.train_clean_indices = None
+        # empty init
+        self.X_train = np.empty((0, 0), dtype=np.float32)
+        self.X_test = np.empty((0, 0), dtype=np.float32)
+        self.y_train = np.empty((0,), dtype=np.int64)
+        self.y_test = np.empty((0,), dtype=np.int64)
+
+        self.train_noise_indices = np.empty((0,), dtype=np.int64)
+        self.train_clean_indices = np.empty((0,), dtype=np.int64)
 
         self.perturber = MNISTPerturber(random_state)
 
@@ -100,6 +122,23 @@ class DataPreparation:
         self.X_raw = X
         self.y_raw = y
 
+    def split(self):
+        X_train, X_test, y_train, y_test, train_idx, test_idx = train_test_split(
+            self.X_raw,
+            self.y_raw,  # 全干净标签
+            np.arange(len(self.y_raw)),
+            test_size=self.test_size,
+            random_state=self.random_state,
+        )
+        self.train_idx = np.asarray(train_idx, dtype=np.int64)
+        self.test_idx = np.asarray(test_idx, dtype=np.int64)
+
+        self.X_train_raw = np.asarray(X_train, dtype=np.float32)
+        self.X_test = np.asarray(X_test, dtype=np.float32)
+        self.y_train_raw = np.asarray(y_train, dtype=np.int64)
+        self.y_test = np.asarray(y_test, dtype=np.int64)
+        print(f"[Data] Split done: Train={len(X_train)}, Test={len(X_test)}")
+
     def inject_noise(self):
         """Add noise to training data
         set self.X_train, self.y_train, self.noise_indices
@@ -110,38 +149,34 @@ class DataPreparation:
         y = self.y_train_raw.copy()
         pert = self.perturber
 
+        noise_items = [(k, v) for k, v in self.noise_config.items() if k != "ratio"]
+        ratio = float(self.noise_config.get("ratio", 0.0))
         # 若无 noise_config，直接返回
-        if not hasattr(self, "noise_config") or len(self.noise_config) == 0:
+        if (
+            len(self.noise_config) == 0
+            or self.noise_config["ratio"] == 0
+            or len(noise_items) == 0
+        ):
             print("[Data] No perturbations applied.")
             self.X_train = X
             self.y_train = y
             self.noise_indices = np.array([], dtype=int)
             return
-
-        # 先确定 noise_indices（标签噪声 > 像素噪声触发）
-        if "label_flip" in self.noise_config:
-            ratio = self.noise_config["label_flip"].get("ratio", 0.0)
-            y, noise_indices = pert.flip_labels(y, noise_ratio=ratio)
-            print(f"[Data] Label flip: {len(noise_indices)} indices selected")
-        else:
-            # 未定义标签噪声，则以任意噪声条目作为依据确定噪声比例
-            key = list(self.noise_config.keys())[0]
-            ratio = self.noise_config[key].get("ratio", 0.1)  # 默认10%
-            n_samples = len(X)
-            n_noisy = int(n_samples * ratio)
-            noise_indices = pert.rng.choice(n_samples, n_noisy, replace=False)
-            print(f"[Data] Random selection: {n_noisy} indices selected")
+        n_samples = len(X)
+        n_noisy = int(n_samples * ratio)
+        noise_indices = pert.rng.choice(n_samples, n_noisy, replace=False)
+        print(f"[Data] Random selection: {n_noisy} indices selected")
 
         self.noise_indices = np.array(noise_indices)
+        subset = X[self.noise_indices]  # 只处理噪声样本
 
         # 将所有像素噪声叠加到相同 noise_indices 样本上
-        for noise_type, params in self.noise_config.items():
-            if noise_type == "label_flip":
-                continue  # 已处理
+        for noise_type, params in noise_items:
+            if noise_type == "label_flip" and params:
+                y = pert.flip_labels(y, noise_indices=self.noise_indices)
+                print(f"[Data] Label flip: {len(noise_indices)} indices selected")
 
-            subset = X[self.noise_indices]  # 只处理噪声样本
-
-            if noise_type == "gaussian":
+            elif noise_type == "gaussian":
                 std = params.get("std", 0.1)
                 subset = pert.add_gaussian_noise(subset, noise_std=std)
                 print(f"[Data] Gaussian noise std={std}")
@@ -191,28 +226,7 @@ class DataPreparation:
             f"[Data] Noisy Train: {len(self.train_noise_indices)} noise, {len(self.train_clean_indices)} clean"
         )
 
-    def split(self):
-        X_train, X_test, y_train, y_test, train_idx, test_idx = train_test_split(
-            self.X_raw,
-            self.y_raw,  # 全干净标签
-            np.arange(len(self.y_raw)),
-            test_size=self.test_size,
-            random_state=self.random_state,
-        )
-
-        # 保存划分索引，用于 inject_noise 后映射
-        self.train_idx = train_idx
-        self.test_idx = test_idx
-
-        self.X_train_raw = X_train
-        self.X_test = X_test
-        self.y_train_raw = y_train
-        self.y_test = y_test
-
-        print(f"[Data] Split done: Train={len(X_train)}, Test={len(X_test)}")
-
     # 特征提取
-
     def extract_hog(self, X):
         X_reshaped = X.reshape(-1, 28, 28)
         feats = []
@@ -257,7 +271,9 @@ class DataPreparation:
 
     # 总调度函数
 
-    def prepare(self):
+    def prepare(
+        self,
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         self.download_mnist()
         self.split()
         self.inject_noise()
@@ -339,7 +355,7 @@ class MNISTPerturber:
         self.random_state = random_state
         self.rng = np.random.RandomState(random_state)
 
-    def flip_labels(self, y, noise_ratio=0.0, num_classes=10):
+    def flip_labels(self, y, noise_indices, num_classes=10):
         """
         随机翻转标签噪声（对分类标签做对抗扰动）
 
@@ -347,8 +363,8 @@ class MNISTPerturber:
         ----------
         y : array
             标签数组（真实标签）
-        noise_ratio : float
-            噪声比例
+        noise_indices:NDArray
+            噪声数据索引
         num_classes : int
             分类数（默认为 MNIST 的 10 类）
 
@@ -356,21 +372,14 @@ class MNISTPerturber:
         -------
         y_noisy : ndarray
             添加噪声后的标签
-        noise_indices : ndarray
-            被修改标签的索引
         """
         y_noisy = y.copy()
-        n_samples = len(y)
 
-        if noise_ratio <= 0:
-            return y_noisy, np.array([], dtype=int)
+        y_noisy[noise_indices] = self.rng.randint(
+            0, num_classes, size=len(noise_indices)
+        )
 
-        n_noisy = int(n_samples * noise_ratio)
-        noise_indices = self.rng.choice(n_samples, n_noisy, replace=False)
-
-        y_noisy[noise_indices] = self.rng.randint(0, num_classes, size=n_noisy)
-
-        return y_noisy, noise_indices
+        return y_noisy
 
     def add_brightness_shift(self, X, shift_range=0.3):
         """
