@@ -189,7 +189,7 @@ class BoostMonitor:
 
     def dump(self, filename="monitor_log.csv"):
         """
-        将所有监控数据保存为 CSV 文件（最终版）
+        将所有监控数据保存为 CSV 文件
         自动对齐所有历史记录，缺失部分会用 None 填充。
         """
 
@@ -205,8 +205,6 @@ class BoostMonitor:
             "round": list(range(1, rounds + 1)),
             "weighted_error": self.error_history,
             "alpha": self.alpha_history,
-            # "acc_on_training_data": self.acc_on_train_data,
-            # "f1_on_training_data": self.f1_on_training_data,
         }
 
         # 普通错误率（unweighted）
@@ -222,17 +220,6 @@ class BoostMonitor:
         else:
             data["noisy_weight"] = [None] * rounds
             data["clean_weight"] = [None] * rounds
-
-        # validation 指标
-        if len(self.val_acc_history) == rounds:
-            data["val_acc"] = self.val_acc_history
-        else:
-            data["val_acc"] = [None] * rounds
-
-        if len(self.val_f1_history) == rounds:
-            data["val_f1"] = self.val_f1_history
-        else:
-            data["val_f1"] = [None] * rounds
 
         # 输出 CSV
         df = pd.DataFrame(data)
