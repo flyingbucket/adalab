@@ -1,17 +1,13 @@
 {
   "experiment": {
-    "name": "main_hu"  
+    "name": "main_original"  
   },
 
   "data": {
     "noise_ratio": 0.0,            
     "test_size": 0.2,             
     "random_state": 42,          
-    "use_feature": "hu",        
-
-    "hu_params": {
-      "log_scale": true
-    }
+    "use_feature": "original"
   },
 
   "monitor": {

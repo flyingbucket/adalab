@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adalab"
+version = "0.1.0"
+description = "A lightweight backend for AdaBoost behavior experiments with monitoring, noise injection, and workflow management."
+authors = [{ name = "flyingbucket" }]
+readme = "README.md"
+requires-python = ">=3.12"
+
+dependencies = [
+  "numpy>=2.3",
+  "pandas>=2.3",
+  "scikit-learn>=1.7",
+  "matplotlib",
+  "tqdm",
+  "mplfonts",
+]
+
+[project.optional-dependencies]
+viz = ["matplotlib", "mplfonts", "seaborn"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# include package data if needed
+# [tool.setuptools.package-data]
+# "adalab" = ["*.json", "*.txt"]

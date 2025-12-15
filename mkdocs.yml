@@ -1,0 +1,45 @@
+site_name: adalab Documentation
+docs_dir: mk-docs
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_root_heading: true
+            show_source: false
+            merge_init_into_class: true
+
+nav:
+  - Home: index.md
+
+  - Backend (adalab):
+      - Overview: backend/overview.md
+      - Workflow: backend/workflow.md
+      - Monitor: backend/monitor.md
+      - Patch: backend/patch.md
+      - Evaluation: backend/evaluation.md
+      - Data: backend/data.md
+      - IO: backend/io.md
+
+  - Visualization (adalab_viz):
+      - Overview: visualization/overview.md
+      - Concepts: visualization/concepts.md
+      # - API: visualization/api.md  # 以后接 mkdocstrings
