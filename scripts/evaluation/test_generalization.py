@@ -1,52 +1,45 @@
 """
-泛化能力测试：在标准MNIST上训练，在带扰动的MNIST上测试
-测试模型对视觉扰动的鲁棒性
+Generalization Test: Train on standard MNIST, test on perturbed MNIST
+Test model robustness against visual perturbations
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib
-from mplfonts.bin.cli import init
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix
 import seaborn as sns
 from tqdm import tqdm
 
-from src.utils import prepare_data
+from src.utils import DataPreparation
 from src.robust_adaboost import create_robust_adaboost, RobustAdaBoost
-
-# 初始化中文字体
-init()
-matplotlib.rcParams["font.family"] = "Source Han Sans CN"
-matplotlib.rcParams["axes.unicode_minus"] = False
 
 
 class MNISTPerturber:
-    """MNIST数据扰动器"""
+    """MNIST data perturber"""
     
     def __init__(self, random_state=42):
         """
-        初始化扰动器
+        Initialize perturber
         
         Parameters
         ----------
         random_state : int
-            随机种子
+            Random seed
         """
         self.random_state = random_state
         self.rng = np.random.RandomState(random_state)
     
     def add_brightness_shift(self, X, shift_range=0.3):
         """
-        添加亮度偏移
+        Add brightness shift
         
         Parameters
         ----------
         X : array
-            原始数据 [0, 1]
+            Original data [0, 1]
         shift_range : float
-            亮度偏移范围 [-shift_range, shift_range]
+            Brightness shift range [-shift_range, shift_range]
         """
         shift = self.rng.uniform(-shift_range, shift_range, size=len(X))
         X_perturbed = X + shift[:, np.newaxis]
@@ -54,14 +47,14 @@ class MNISTPerturber:
     
     def add_gaussian_noise(self, X, noise_std=0.1):
         """
-        添加高斯噪声
+        Add Gaussian noise
         
         Parameters
         ----------
         X : array
-            原始数据
+            Original data
         noise_std : float
-            噪声标准差
+            Noise standard deviation
         """
         noise = self.rng.normal(0, noise_std, X.shape)
         X_perturbed = X + noise
@@ -69,23 +62,23 @@ class MNISTPerturber:
     
     def add_salt_pepper_noise(self, X, amount=0.05):
         """
-        添加椒盐噪声
+        Add salt and pepper noise
         
         Parameters
         ----------
         X : array
-            原始数据
+            Original data
         amount : float
-            噪声比例
+            Noise ratio
         """
         X_perturbed = X.copy()
         
-        # Salt噪声（白点）
+        # Salt noise (white dots)
         n_salt = int(amount * X.size * 0.5)
         coords = [self.rng.randint(0, i, n_salt) for i in X.shape]
         X_perturbed[tuple(coords)] = 1
         
-        # Pepper噪声（黑点）
+        # Pepper noise (black dots)
         n_pepper = int(amount * X.size * 0.5)
         coords = [self.rng.randint(0, i, n_pepper) for i in X.shape]
         X_perturbed[tuple(coords)] = 0
@@ -94,14 +87,14 @@ class MNISTPerturber:
     
     def add_blur(self, X, kernel_size=3):
         """
-        添加模糊效果（简单平均滤波）
+        Add blur effect (simple average filter)
         
         Parameters
         ----------
         X : array
-            原始数据
+            Original data
         kernel_size : int
-            模糊核大小
+            Blur kernel size
         """
         from scipy.ndimage import uniform_filter
         
@@ -115,14 +108,14 @@ class MNISTPerturber:
     
     def adjust_contrast(self, X, factor_range=(0.5, 1.5)):
         """
-        调整对比度
+        Adjust contrast
         
         Parameters
         ----------
         X : array
-            原始数据
+            Original data
         factor_range : tuple
-            对比度因子范围
+            Contrast factor range
         """
         factors = self.rng.uniform(factor_range[0], factor_range[1], size=len(X))
         
@@ -135,14 +128,14 @@ class MNISTPerturber:
     
     def rotate_slight(self, X, angle_range=15):
         """
-        轻微旋转
+        Slight rotation
         
         Parameters
         ----------
         X : array
-            原始数据
+            Original data
         angle_range : float
-            旋转角度范围（度）
+            Rotation angle range (degrees)
         """
         from scipy.ndimage import rotate
         
@@ -157,14 +150,14 @@ class MNISTPerturber:
     
     def apply_perturbation(self, X, perturbation_type, **kwargs):
         """
-        应用指定类型的扰动
+        Apply specified perturbation type
         
         Parameters
         ----------
         X : array
-            原始数据
+            Original data
         perturbation_type : str
-            扰动类型
+            Perturbation type
         """
         if perturbation_type == 'brightness':
             return self.add_brightness_shift(X, **kwargs)
@@ -179,36 +172,36 @@ class MNISTPerturber:
         elif perturbation_type == 'rotation':
             return self.rotate_slight(X, **kwargs)
         else:
-            raise ValueError(f"未知扰动类型: {perturbation_type}")
+            raise ValueError(f"Unknown perturbation type: {perturbation_type}")
 
 
 def visualize_perturbations(X_original, perturber, save_path=None):
     """
-    可视化不同类型的扰动效果
+    Visualize different perturbation effects
     
     Parameters
     ----------
     X_original : array
-        原始数据
+        Original data
     perturber : MNISTPerturber
-        扰动器
+        Perturber instance
     save_path : str
-        保存路径
+        Save path
     """
-    # 选择一些样本
+    # Select some samples
     n_samples = 5
     indices = np.random.choice(len(X_original), n_samples, replace=False)
     samples = X_original[indices]
     
-    # 定义扰动类型
+    # Define perturbation types
     perturbations = [
-        ('原始', None, {}),
-        ('亮度偏移', 'brightness', {'shift_range': 0.3}),
-        ('高斯噪声', 'gaussian_noise', {'noise_std': 0.15}),
-        ('椒盐噪声', 'salt_pepper', {'amount': 0.05}),
-        ('模糊', 'blur', {'kernel_size': 3}),
-        ('对比度', 'contrast', {'factor_range': (0.5, 1.5)}),
-        ('旋转', 'rotation', {'angle_range': 15}),
+        ('Original', None, {}),
+        ('Brightness', 'brightness', {'shift_range': 0.3}),
+        ('Gaussian Noise', 'gaussian_noise', {'noise_std': 0.15}),
+        ('Salt & Pepper', 'salt_pepper', {'amount': 0.05}),
+        ('Blur', 'blur', {'kernel_size': 3}),
+        ('Contrast', 'contrast', {'factor_range': (0.5, 1.5)}),
+        ('Rotation', 'rotation', {'angle_range': 15}),
     ]
     
     # 创建图形
@@ -230,63 +223,63 @@ def visualize_perturbations(X_original, perturber, save_path=None):
                 ax.set_ylabel(name, fontsize=12, rotation=0, 
                             ha='right', va='center', labelpad=50)
     
-    plt.suptitle('MNIST数据扰动类型展示', fontsize=16, y=0.995)
+    plt.suptitle('MNIST Data Perturbation Examples', fontsize=16, y=0.995)
     plt.tight_layout()
     
     if save_path:
         plt.savefig(save_path, dpi=150, bbox_inches='tight')
-        print(f"扰动示例已保存到: {save_path}")
+        print(f"Perturbation examples saved to: {save_path}")
     else:
         plt.show()
     
     plt.close()
 
 
-def test_generalization(clf, X_test, y_test, perturber, model_name="模型"):
+def test_generalization(clf, X_test, y_test, perturber, model_name="Model"):
     """
-    测试模型在不同扰动下的泛化能力
+    Test model generalization under different perturbations
     
     Parameters
     ----------
-    clf : 分类器
-        训练好的模型
+    clf : classifier
+        Trained model
     X_test : array
-        测试数据
+        Test data
     y_test : array
-        测试标签
+        Test labels
     perturber : MNISTPerturber
-        扰动器
+        Perturber instance
     model_name : str
-        模型名称
+        Model name
     
     Returns
     -------
     results : dict
-        测试结果
+        Test results
     """
     print(f"\n{'='*60}")
-    print(f"测试 {model_name} 的泛化能力")
+    print(f"Testing {model_name} Generalization")
     print(f"{'='*60}")
     
-    # 定义扰动配置
+    # Define perturbation configurations
     perturbation_configs = [
-        ('原始（无扰动）', None, {}),
-        ('亮度±10%', 'brightness', {'shift_range': 0.1}),
-        ('亮度±20%', 'brightness', {'shift_range': 0.2}),
-        ('亮度±30%', 'brightness', {'shift_range': 0.3}),
-        ('高斯噪声σ=0.05', 'gaussian_noise', {'noise_std': 0.05}),
-        ('高斯噪声σ=0.10', 'gaussian_noise', {'noise_std': 0.10}),
-        ('高斯噪声σ=0.15', 'gaussian_noise', {'noise_std': 0.15}),
-        ('椒盐噪声2%', 'salt_pepper', {'amount': 0.02}),
-        ('椒盐噪声5%', 'salt_pepper', {'amount': 0.05}),
-        ('椒盐噪声10%', 'salt_pepper', {'amount': 0.10}),
-        ('模糊3x3', 'blur', {'kernel_size': 3}),
-        ('模糊5x5', 'blur', {'kernel_size': 5}),
-        ('对比度±30%', 'contrast', {'factor_range': (0.7, 1.3)}),
-        ('对比度±50%', 'contrast', {'factor_range': (0.5, 1.5)}),
-        ('旋转±5°', 'rotation', {'angle_range': 5}),
-        ('旋转±10°', 'rotation', {'angle_range': 10}),
-        ('旋转±15°', 'rotation', {'angle_range': 15}),
+        ('Original (No Perturbation)', None, {}),
+        ('Brightness ±10%', 'brightness', {'shift_range': 0.1}),
+        ('Brightness ±20%', 'brightness', {'shift_range': 0.2}),
+        ('Brightness ±30%', 'brightness', {'shift_range': 0.3}),
+        ('Gaussian Noise σ=0.05', 'gaussian_noise', {'noise_std': 0.05}),
+        ('Gaussian Noise σ=0.10', 'gaussian_noise', {'noise_std': 0.10}),
+        ('Gaussian Noise σ=0.15', 'gaussian_noise', {'noise_std': 0.15}),
+        ('Salt & Pepper 2%', 'salt_pepper', {'amount': 0.02}),
+        ('Salt & Pepper 5%', 'salt_pepper', {'amount': 0.05}),
+        ('Salt & Pepper 10%', 'salt_pepper', {'amount': 0.10}),
+        ('Blur 3x3', 'blur', {'kernel_size': 3}),
+        ('Blur 5x5', 'blur', {'kernel_size': 5}),
+        ('Contrast ±30%', 'contrast', {'factor_range': (0.7, 1.3)}),
+        ('Contrast ±50%', 'contrast', {'factor_range': (0.5, 1.5)}),
+        ('Rotation ±5°', 'rotation', {'angle_range': 5}),
+        ('Rotation ±10°', 'rotation', {'angle_range': 10}),
+        ('Rotation ±15°', 'rotation', {'angle_range': 15}),
     ]
     
     results = {
@@ -295,50 +288,50 @@ def test_generalization(clf, X_test, y_test, perturber, model_name="模型"):
         'accuracy_drops': [],
     }
     
-    # 测试每种扰动
+    # Test each perturbation
     baseline_acc = None
     
-    for name, ptype, params in tqdm(perturbation_configs, desc="测试扰动"):
-        # 应用扰动
+    for name, ptype, params in tqdm(perturbation_configs, desc="Testing perturbations"):
+        # Apply perturbation
         if ptype is None:
             X_perturbed = X_test
         else:
             X_perturbed = perturber.apply_perturbation(X_test, ptype, **params)
         
-        # 预测
+        # Predict
         y_pred = clf.predict(X_perturbed)
         acc = accuracy_score(y_test, y_pred)
         
-        # 记录基线准确率
+        # Record baseline accuracy
         if baseline_acc is None:
             baseline_acc = acc
         
-        # 计算准确率下降
+        # Calculate accuracy drop
         acc_drop = baseline_acc - acc
         
         results['names'].append(name)
         results['accuracies'].append(acc)
         results['accuracy_drops'].append(acc_drop)
         
-        print(f"{name:20s}: {acc:.4f} (下降 {acc_drop:.4f})")
+        print(f"{name:30s}: {acc:.4f} (drop {acc_drop:.4f})")
     
     return results
 
 
 def plot_generalization_results(results_dict, save_path=None):
     """
-    可视化泛化能力测试结果
+    Visualize generalization test results
     
     Parameters
     ----------
     results_dict : dict
-        多个模型的结果字典 {model_name: results}
+        Results dictionary for multiple models {model_name: results}
     save_path : str
-        保存路径
+        Save path
     """
     fig, axes = plt.subplots(2, 1, figsize=(14, 10))
     
-    # 子图1: 准确率对比
+    # Subplot 1: Accuracy comparison
     ax1 = axes[0]
     x = np.arange(len(results_dict[list(results_dict.keys())[0]]['names']))
     width = 0.35
@@ -348,8 +341,8 @@ def plot_generalization_results(results_dict, save_path=None):
         ax1.bar(x + offset, results['accuracies'], width, 
                label=model_name, alpha=0.8)
     
-    ax1.set_ylabel('准确率', fontsize=12)
-    ax1.set_title('不同扰动下的模型准确率', fontsize=14, pad=15)
+    ax1.set_ylabel('Accuracy', fontsize=12)
+    ax1.set_title('Model Accuracy Under Different Perturbations', fontsize=14, pad=15)
     ax1.set_xticks(x)
     ax1.set_xticklabels(results_dict[list(results_dict.keys())[0]]['names'], 
                        rotation=45, ha='right', fontsize=9)
@@ -357,7 +350,7 @@ def plot_generalization_results(results_dict, save_path=None):
     ax1.grid(axis='y', alpha=0.3)
     ax1.set_ylim([0, 1.0])
     
-    # 子图2: 准确率下降
+    # Subplot 2: Accuracy drop
     ax2 = axes[1]
     
     for i, (model_name, results) in enumerate(results_dict.items()):
@@ -365,7 +358,7 @@ def plot_generalization_results(results_dict, save_path=None):
         bars = ax2.bar(x + offset, results['accuracy_drops'], width,
                       label=model_name, alpha=0.8)
         
-        # 为负值（性能提升）和正值（性能下降）使用不同颜色
+        # Use different colors for negative (improvement) and positive (degradation) values
         for bar, drop in zip(bars, results['accuracy_drops']):
             if drop > 0:
                 bar.set_color('red')
@@ -375,9 +368,9 @@ def plot_generalization_results(results_dict, save_path=None):
                 bar.set_alpha(0.6)
     
     ax2.axhline(y=0, color='black', linestyle='-', linewidth=0.5)
-    ax2.set_ylabel('准确率下降', fontsize=12)
-    ax2.set_xlabel('扰动类型', fontsize=12)
-    ax2.set_title('准确率下降幅度（正值=性能下降，负值=性能提升）', fontsize=14, pad=15)
+    ax2.set_ylabel('Accuracy Drop', fontsize=12)
+    ax2.set_xlabel('Perturbation Type', fontsize=12)
+    ax2.set_title('Accuracy Drop Magnitude (Positive=Degradation, Negative=Improvement)', fontsize=14, pad=15)
     ax2.set_xticks(x)
     ax2.set_xticklabels(results_dict[list(results_dict.keys())[0]]['names'],
                        rotation=45, ha='right', fontsize=9)
@@ -388,7 +381,7 @@ def plot_generalization_results(results_dict, save_path=None):
     
     if save_path:
         plt.savefig(save_path, dpi=150, bbox_inches='tight')
-        print(f"泛化能力测试结果已保存到: {save_path}")
+        print(f"Generalization test results saved to: {save_path}")
     else:
         plt.show()
     
@@ -397,41 +390,41 @@ def plot_generalization_results(results_dict, save_path=None):
 
 def print_summary(results_dict):
     """
-    打印泛化能力测试总结
+    Print generalization test summary
     
     Parameters
     ----------
     results_dict : dict
-        多个模型的结果
+        Results for multiple models
     """
-    print("\n" + "█" * 60)
-    print("泛化能力测试总结".center(56))
-    print("█" * 60)
+    print("\n" + "=" * 60)
+    print("Generalization Test Summary".center(60))
+    print("=" * 60)
     
     for model_name, results in results_dict.items():
         print(f"\n{model_name}:")
         print("-" * 60)
         
         baseline_acc = results['accuracies'][0]
-        avg_acc = np.mean(results['accuracies'][1:])  # 排除基线
+        avg_acc = np.mean(results['accuracies'][1:])  # Exclude baseline
         avg_drop = np.mean(results['accuracy_drops'][1:])
         max_drop = np.max(results['accuracy_drops'][1:])
         
-        # 找出最难的扰动
+        # Find the hardest perturbation
         worst_idx = np.argmax(results['accuracy_drops'][1:]) + 1
         worst_name = results['names'][worst_idx]
         worst_acc = results['accuracies'][worst_idx]
         
-        print(f"  基线准确率（无扰动）: {baseline_acc:.4f} ({baseline_acc*100:.2f}%)")
-        print(f"  平均准确率（有扰动）: {avg_acc:.4f} ({avg_acc*100:.2f}%)")
-        print(f"  平均准确率下降: {avg_drop:.4f} ({avg_drop*100:.2f}%)")
-        print(f"  最大准确率下降: {max_drop:.4f} ({max_drop*100:.2f}%)")
-        print(f"  最难扰动: {worst_name} (准确率: {worst_acc:.4f})")
+        print(f"  Baseline accuracy (no perturbation): {baseline_acc:.4f} ({baseline_acc*100:.2f}%)")
+        print(f"  Average accuracy (with perturbation): {avg_acc:.4f} ({avg_acc*100:.2f}%)")
+        print(f"  Average accuracy drop: {avg_drop:.4f} ({avg_drop*100:.2f}%)")
+        print(f"  Maximum accuracy drop: {max_drop:.4f} ({max_drop*100:.2f}%)")
+        print(f"  Hardest perturbation: {worst_name} (accuracy: {worst_acc:.4f})")
     
-    # 对比分析
+    # Comparison analysis
     if len(results_dict) > 1:
         print("\n" + "=" * 60)
-        print("模型对比".center(56))
+        print("Model Comparison".center(60))
         print("=" * 60)
         
         model_names = list(results_dict.keys())
@@ -441,90 +434,91 @@ def print_summary(results_dict):
                 res1 = results_dict[name1]
                 res2 = results_dict[name2]
                 
-                # 计算平均准确率差异
+                # Calculate average accuracy difference
                 avg_acc1 = np.mean(res1['accuracies'][1:])
                 avg_acc2 = np.mean(res2['accuracies'][1:])
                 
                 print(f"\n{name1} vs {name2}:")
-                print(f"  平均准确率差异: {avg_acc1 - avg_acc2:+.4f}")
+                print(f"  Average accuracy difference: {avg_acc1 - avg_acc2:+.4f}")
                 
                 if avg_acc1 > avg_acc2:
-                    print(f"  ✓ {name1} 在扰动数据上表现更好")
+                    print(f"  ✓ {name1} performs better on perturbed data")
                 elif avg_acc2 > avg_acc1:
-                    print(f"  ✓ {name2} 在扰动数据上表现更好")
+                    print(f"  ✓ {name2} performs better on perturbed data")
                 else:
-                    print(f"  = 两者表现相当")
+                    print(f"  = Both models perform similarly")
     
     print("\n" + "=" * 60)
 
 
 def main():
-    """主函数"""
+    """Main function"""
     
-    print("\n" + "█" * 60)
-    print("MNIST泛化能力测试".center(56))
-    print("在标准MNIST上训练，在带扰动的MNIST上测试".center(56))
-    print("█" * 60)
+    print("\n" + "=" * 60)
+    print("MNIST Generalization Test".center(60))
+    print("Train on standard MNIST, test on perturbed MNIST".center(60))
+    print("=" * 60)
     
     import os
     os.makedirs('results', exist_ok=True)
     
-    # ========== 1. 准备数据 ==========
-    print("\n步骤1: 准备数据")
+    # ========== 1. Prepare data ==========
+    print("\nStep 1: Prepare data")
     print("-" * 60)
     
-    X_train, X_test, y_train, y_test, _, _ = prepare_data(noise_ratio=0)
+    data_prep = DataPreparation(noise_ratio=0, use_feature='original', random_state=42)
+    X_train, X_test, y_train, y_test, _, _ = data_prep.prepare()
     
-    print(f"训练集: {len(X_train)} 样本")
-    print(f"测试集: {len(X_test)} 样本")
+    print(f"Training set: {len(X_train)} samples")
+    print(f"Test set: {len(X_test)} samples")
     
-    # ========== 2. 创建扰动器 ==========
-    print("\n步骤2: 创建数据扰动器")
+    # ========== 2. Create perturber ==========
+    print("\nStep 2: Create data perturber")
     print("-" * 60)
     
     perturber = MNISTPerturber(random_state=42)
     
-    # 可视化扰动效果
-    print("生成扰动示例可视化...")
+    # Visualize perturbation effects
+    print("Generating perturbation examples...")
     visualize_perturbations(X_test, perturber, 
                            save_path='results/perturbation_examples.png')
     
-    # ========== 3. 训练模型 ==========
-    print("\n步骤3: 训练模型")
+    # ========== 3. Train models ==========
+    print("\nStep 3: Train models")
     print("-" * 60)
     
     models = {}
     
-    # 模型1: 标准AdaBoost
-    print("\n训练标准AdaBoost...")
+    # Model 1: Standard AdaBoost
+    print("\nTraining standard AdaBoost...")
     clf_standard = AdaBoostClassifier(
-        estimator=DecisionTreeClassifier(max_depth=3),  # 增加树深度以适应高维数据
-        n_estimators=100,  # 增加弱分类器数量
+        estimator=DecisionTreeClassifier(max_depth=5),  # Increase tree depth to ensure error < 0.5
+        n_estimators=100,
         learning_rate=1.0,
         random_state=42
     )
     clf_standard.fit(X_train, y_train)
-    models['标准AdaBoost'] = clf_standard
-    print(f"训练完成，测试准确率: {clf_standard.score(X_test, y_test):.4f}")
+    models['Standard AdaBoost'] = clf_standard
+    print(f"Training complete, test accuracy: {clf_standard.score(X_test, y_test):.4f}")
     
-    # 模型2: 鲁棒AdaBoost（禁用早停以适应多分类问题）
-    print("\n训练鲁棒AdaBoost...")
+    # Model 2: Robust AdaBoost (disable early stopping for multi-class problem)
+    print("\nTraining robust AdaBoost...")
     clf_robust = RobustAdaBoost(
-        base_estimator=DecisionTreeClassifier(max_depth=3),
+        base_estimator=DecisionTreeClassifier(max_depth=5),  # Use deeper trees to ensure error < 0.5
         n_estimators=100,
         learning_rate=1.0,
         random_state=42,
         weight_clip_percentile=95,
-        use_early_stopping=False,  # 禁用早停
-        use_sample_weight_smoothing=True,  # 使用权重平滑
+        use_early_stopping=False,  # Disable early stopping
+        use_sample_weight_smoothing=True,  # Use weight smoothing
         smoothing_factor=0.5
     )
     clf_robust.fit(X_train, y_train)
-    models['鲁棒AdaBoost'] = clf_robust
-    print(f"训练完成，测试准确率: {clf_robust.score(X_test, y_test):.4f}")
+    models['Robust AdaBoost'] = clf_robust
+    print(f"Training complete, test accuracy: {clf_robust.score(X_test, y_test):.4f}")
     
-    # ========== 4. 测试泛化能力 ==========
-    print("\n步骤4: 测试泛化能力")
+    # ========== 4. Test generalization ==========
+    print("\nStep 4: Test generalization")
     print("-" * 60)
     
     results_dict = {}
@@ -533,20 +527,20 @@ def main():
         results = test_generalization(clf, X_test, y_test, perturber, model_name)
         results_dict[model_name] = results
     
-    # ========== 5. 可视化结果 ==========
-    print("\n步骤5: 生成可视化")
+    # ========== 5. Visualize results ==========
+    print("\nStep 5: Generate visualization")
     print("-" * 60)
     
     plot_generalization_results(results_dict, 
                                save_path='results/generalization_test.png')
     
-    # ========== 6. 打印总结 ==========
+    # ========== 6. Print summary ==========
     print_summary(results_dict)
     
-    print("\n✓ 泛化能力测试完成！")
-    print("\n生成的文件:")
-    print("  • results/perturbation_examples.png - 扰动示例")
-    print("  • results/generalization_test.png - 泛化测试结果")
+    print("\n✓ Generalization test complete!")
+    print("\nGenerated files:")
+    print("  • results/perturbation_examples.png - Perturbation examples")
+    print("  • results/generalization_test.png - Generalization test results")
 
 
 if __name__ == "__main__":

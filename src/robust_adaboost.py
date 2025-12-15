@@ -105,6 +105,10 @@ class RobustAdaBoost:
         # 早停相关
         best_val_score = 0
         rounds_without_improvement = 0
+        
+        # 连续失败计数器（错误率>=0.5）
+        consecutive_failures = 0
+        max_consecutive_failures = 10  # 最多允许连续10次失败
 
         # 逐步训练弱学习器
         for i in range(self.n_estimators):
@@ -126,18 +130,29 @@ class RobustAdaBoost:
             incorrect = y_pred != y_train
             estimator_error = np.sum(sample_weight * incorrect) / np.sum(sample_weight)
 
-            # 如果错误率太高，停止训练
-            # 注意：对于多分类问题，初始错误率可能较高，因此放宽条件
-            if estimator_error >= 0.9:  # 放宽到90%，只有在极端情况下才停止
-                print(
-                    f"轮次 {i+1}: 错误率 {estimator_error:.4f} >= 0.9，提前停止"
-                )
-                break
-            elif estimator_error >= 0.5:
-                # 对于多分类，错误率>50%不一定意味着没有用处
-                # 继续训练但打印警告
-                if i == 0:  # 只在第一轮打印警告
-                    print(f"警告：轮次 {i+1} 错误率 {estimator_error:.4f}，继续训练...")
+            # 如果错误率 >= 0.5，跳过这个弱学习器
+            # 对于AdaBoost，错误率>=0.5的弱学习器会产生负权重，导致训练失败
+            if estimator_error >= 0.5:
+                consecutive_failures += 1
+                if consecutive_failures == 1:  # 第一次失败时打印警告
+                    print(
+                        f"警告：轮次 {i+1} 错误率 {estimator_error:.4f} >= 0.5，"
+                        f"跳过此弱学习器..."
+                    )
+                
+                # 如果连续失败次数过多，停止训练
+                if consecutive_failures >= max_consecutive_failures:
+                    print(
+                        f"\n错误：连续 {max_consecutive_failures} 次弱学习器错误率 >= 0.5"
+                    )
+                    print("建议：使用更强的基学习器（如增加 max_depth）或使用其他算法")
+                    break
+                
+                # 跳过这个弱学习器，不添加到集成中
+                continue
+            else:
+                # 成功添加弱学习器，重置失败计数器
+                consecutive_failures = 0
 
             # 计算弱学习器权重α
             estimator_weight = self.learning_rate * np.log(

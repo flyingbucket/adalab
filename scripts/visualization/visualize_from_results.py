@@ -38,6 +38,15 @@ def load_from_csv(csv_path):
     df = pd.read_csv(csv_path)
     print(f"✓ Loaded {len(df)} rounds of training data")
     
+    # ❌ 严格模式：CSV 必须包含 val_idx 列
+    if 'val_idx' not in df.columns:
+        raise ValueError(
+            "CSV 文件缺少 'val_idx' 列！\n"
+            "CSV 格式无法完整支持 val-after-train 模式。\n"
+            "请使用 joblib 格式加载数据：\n"
+            f"  python {__file__} --joblib <path_to_monitor.joblib>"
+        )
+    
     # 构建与 BoostMonitor 相同的数据结构
     data = {
         'rounds': df['round'].tolist(),
@@ -48,6 +57,7 @@ def load_from_csv(csv_path):
         'clean_weight_history': df['clean_weight'].tolist() if 'clean_weight' in df.columns else [],
         'val_acc_history': df['val_acc'].tolist() if 'val_acc' in df.columns else [],
         'val_f1_history': df['val_f1'].tolist() if 'val_f1' in df.columns else [],
+        'val_idx': df['val_idx'].tolist(),  # ✅ 严格模式：必须存在
         'acc_on_train_data': df['train_acc'].tolist() if 'train_acc' in df.columns else [],
         'f1_on_training_data': df['train_f1'].tolist() if 'train_f1' in df.columns else [],
         'is_data_noisy': 'noisy_weight' in df.columns,
@@ -86,6 +96,14 @@ def load_from_joblib(joblib_path):
     print(f"✓ Loaded BoostMonitor object")
     
     # 从 BoostMonitor 对象提取数据
+    # ❌ 严格模式：必须有 val_idx 字段
+    if not hasattr(monitor, 'val_idx'):
+        raise AttributeError(
+            "BoostMonitor 对象缺少 'val_idx' 字段！\n"
+            "请使用更新后的 BoostMonitor 类重新训练模型。\n"
+            "val_idx 字段用于记录验证发生的实际训练轮次，是 val-after-train 模式的必需字段。"
+        )
+    
     data = {
         'rounds': list(range(1, len(monitor.error_history) + 1)),
         'error_history': monitor.error_history,
@@ -95,6 +113,7 @@ def load_from_joblib(joblib_path):
         'clean_weight_history': monitor.clean_weight_history,
         'val_acc_history': monitor.val_acc_history,
         'val_f1_history': monitor.val_f1_history,
+        'val_idx': monitor.val_idx,  # ✅ 严格模式：必须存在
         'acc_on_train_data': monitor.acc_on_train_data,
         'f1_on_training_data': monitor.f1_on_training_data,
         'sample_weights_history': monitor.sample_weights_history,
@@ -188,16 +207,23 @@ def visualize_training_data(data, save_path=None):
                 label='Train Accuracy', marker='o', markersize=4,
                 markevery=max(1, len(rounds)//20))
     if len(data['val_acc_history']) > 0:
-        ax3.plot(rounds, data['val_acc_history'], 'r-', linewidth=2, 
+        # ❌ 严格模式：val_idx 必须与 val_acc_history 长度匹配
+        if len(data['val_idx']) != len(data['val_acc_history']):
+            raise ValueError(
+                f"val_idx 长度 ({len(data['val_idx'])}) 与 val_acc_history 长度 ({len(data['val_acc_history'])}) 不匹配！\n"
+                "数据完整性检查失败。请确保 BoostMonitor.record_validation() 正确调用。"
+            )
+        # ✅ 使用 val_idx 作为横轴（严格模式）
+        ax3.plot(data['val_idx'], data['val_acc_history'], 'r-', linewidth=2, 
                 label='Val Accuracy', marker='s', markersize=4,
-                markevery=max(1, len(rounds)//20))
+                markevery=max(1, len(data['val_idx'])//20))
     ax3.set_xlabel('Boosting Round', fontsize=12)
     ax3.set_ylabel('Accuracy', fontsize=12)
     ax3.set_title('Accuracy Evolution', fontsize=14, fontweight='bold')
     
     # 如果没有训练集准确率数据
     if len(data['acc_on_train_data']) == 0 and len(data['val_acc_history']) > 0:
-        ax3.text(0.5, 0.05, 'Training accuracy not recorded in CSV\n(only validation accuracy available)', 
+        ax3.text(0.5, 0.05, 'Training accuracy not recorded\n(only validation accuracy available)', 
                 ha='center', va='bottom', fontsize=10, color='gray', 
                 transform=ax3.transAxes, style='italic')
     
@@ -226,23 +252,30 @@ def visualize_training_data(data, save_path=None):
         ax4.set_xticks([])
         ax4.set_yticks([])
     
-    # ========== 5. F1 分数演化 ==========
+    # ========== 5. F1 分数演化（val-after-train模式）==========
     ax5 = axes[1, 1]
     if len(data['f1_on_training_data']) > 0:
         ax5.plot(rounds, data['f1_on_training_data'], 'b-', linewidth=2, 
                 label='Train F1', marker='o', markersize=4,
                 markevery=max(1, len(rounds)//20))
     if len(data['val_f1_history']) > 0:
-        ax5.plot(rounds, data['val_f1_history'], 'r-', linewidth=2, 
+        # ❌ 严格模式：val_idx 必须与 val_f1_history 长度匹配
+        if len(data['val_idx']) != len(data['val_f1_history']):
+            raise ValueError(
+                f"val_idx 长度 ({len(data['val_idx'])}) 与 val_f1_history 长度 ({len(data['val_f1_history'])}) 不匹配！\n"
+                "数据完整性检查失败。请确保 BoostMonitor.record_validation() 正确调用。"
+            )
+        # ✅ 使用 val_idx 作为横轴（严格模式）
+        ax5.plot(data['val_idx'], data['val_f1_history'], 'r-', linewidth=2, 
                 label='Val F1', marker='s', markersize=4,
-                markevery=max(1, len(rounds)//20))
+                markevery=max(1, len(data['val_idx'])//20))
     ax5.set_xlabel('Boosting Round', fontsize=12)
     ax5.set_ylabel('F1 Score', fontsize=12)
     ax5.set_title('F1 Score Evolution', fontsize=14, fontweight='bold')
     
     # 如果没有训练F1数据
     if len(data['f1_on_training_data']) == 0 and len(data['val_f1_history']) > 0:
-        ax5.text(0.5, 0.05, 'Training F1 not recorded in CSV\n(only validation F1 available)', 
+        ax5.text(0.5, 0.05, 'Training F1 not recorded\n(only validation F1 available)\n(val-after-train mode)', 
                 ha='center', va='bottom', fontsize=10, color='gray', 
                 transform=ax5.transAxes, style='italic')
     
@@ -303,6 +336,15 @@ def print_summary(data):
     print(f"\n📊 Basic Info:")
     print(f"   - Total Rounds: {data['n_estimators']}")
     print(f"   - Data Type: {'Noisy' if data['is_data_noisy'] else 'Clean'}")
+    
+    # 显示验证模式信息（严格模式：必须有 val_idx）
+    if len(data['val_idx']) > 0:
+        print(f"   - Validation Mode: val-after-train (sampled at {len(data['val_idx'])} rounds)")
+        if len(data['val_idx']) <= 10:
+            print(f"   - Val Rounds: {data['val_idx']}")
+    elif len(data['val_acc_history']) > 0:
+        # ❌ 这不应该发生（严格模式下已经在加载时报错）
+        print(f"   - Validation Mode: val-every-round")
     
     print(f"\n📈 Final Metrics:")
     if len(data['val_acc_history']) > 0:
@@ -407,6 +449,8 @@ Examples:
 
 if __name__ == "__main__":
     exit(main())
+
+
 
 
 

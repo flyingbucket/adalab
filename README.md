@@ -16,26 +16,84 @@
 
 ```text
 ML/
-├── src/                           # 源代码模块
-│   ├── __init__.py               # Python包初始化
-│   ├── evaluation.py             # 评估模块（含过拟合可视化）
-│   ├── monitor.py                # 训练监控器
-│   ├── patch.py                  # AdaBoost方法拦截补丁
-│   ├── utils.py                  # 数据准备工具
-│   └── robust_adaboost.py        # 鲁棒AdaBoost实现 ⭐新增
+├── main.py                      # 统一CLI入口（薄封装）✨新增
 │
-├── docs/                          # 文档目录
+├── scripts/                      # 所有可执行脚本 🔄重构
+│   ├── training/                # 训练脚本
+│   │   ├── main.py             # [已废弃] 兼容性包装器
+│   │   ├── main_hog.py         # [已废弃] 兼容性包装器
+│   │   ├── train_with_clean_data.py   # 干净数据训练
+│   │   └── train_with_noise_track.py  # 噪声数据训练
+│   ├── evaluation/              # 评估和测试脚本
+│   │   ├── test_generalization.py     # 泛化能力测试 ⭐
+│   │   ├── compare_robust_methods.py  # 鲁棒方法对比
+│   │   └── inspect_test_data.py       # 数据检查
+│   ├── visualization/           # 可视化脚本
+│   │   ├── visualize_overfitting.py   # 过拟合可视化
+│   │   ├── visualize_from_results.py  # 结果可视化 ⭐val_idx支持
+│   │   └── visualize_3d_tvtk.py       # 3D可视化
+│   └── demo/                    # 演示脚本
+│       ├── demo_robust.py      # 鲁棒方法演示
+│       └── demo_wrapper.py     # 实验包装器演示
+│
+├── src/                         # 核心源代码模块
+│   ├── adalab/                 # AdaLab统一模块 ✨新增
+│   │   ├── cli/                # CLI命令层
+│   │   │   ├── main.py         # CLI主入口
+│   │   │   ├── train.py        # 训练命令
+│   │   │   ├── evaluate.py     # 评估命令
+│   │   │   └── visualize.py    # 可视化命令
+│   │   └── core/               # 核心业务层
+│   │       ├── evaluator.py    # 统一评估器
+│   │       └── trainer.py      # 训练流程管理器
+│   ├── __init__.py             # Python包初始化
+│   ├── evaluation.py           # 评估模块（含过拟合可视化）
+│   ├── monitor.py              # 训练监控器 ⭐val_idx支持
+│   ├── patch.py                # AdaBoost方法拦截补丁
+│   ├── utils.py                # 数据准备工具（DataPreparation类）
+│   └── robust_adaboost.py      # 鲁棒AdaBoost实现 ⭐
+│
+├── configs/                     # 实验配置文件
+│   ├── TEMPLATE.json           # 配置模板
+│   ├── main_hog_v4.json        # HOG特征实验配置
+│   └── *.json                  # 其他实验配置
+│
+├── experiments/                 # 实验结果和检查点
+│   └── [experiment_name]/      # 每个实验的独立目录
+│       ├── config.json         # 配置备份
+│       ├── checkpoints/        # 训练检查点（CSV）
+│       └── results/            # 最终结果
+│
+├── outputs/                     # 所有输出结果 🔄重构
+│   ├── figures/                # 图表和可视化
+│   │   ├── generalization_test.png      # 泛化测试结果 ⭐新增
+│   │   ├── perturbation_examples.png    # 扰动样本展示 ⭐新增
+│   │   └── *.png              # 其他可视化图表
+│   └── models/                 # 保存的模型文件
+│
+├── data/                        # 数据文件 🔄重构
+│   └── test_images/            # 测试图片（0-9.png）
+│
+├── docs/                        # 项目文档
+│   ├── CLI_GUIDE.md            # CLI使用指南 ✨新增
+│   ├── CLI_REFACTORING_SUMMARY.md  # CLI重构总结 ✨新增
+│   ├── val_after_train_mode.md     # Val-After-Train模式 ⭐新增
+│   ├── PROJECT_STRUCTURE.md    # 项目结构说明 🔄新增
 │   ├── overfitting_visualization_guide.md  # 过拟合可视化指南
-│   └── robust_adaboost_guide.md  # 鲁棒AdaBoost使用指南 ⭐新增
+│   ├── robust_adaboost_guide.md            # 鲁棒AdaBoost指南
+│   ├── generalization_test_guide.md        # 泛化测试指南 ⭐新增
+│   └── *.md                    # 其他功能文档
 │
-├── train_with_clean_data.py      # 干净数据训练脚本
-├── train_with_noise_track.py     # 含噪数据训练脚本
-├── visualize_overfitting.py      # 过拟合可视化脚本
-├── demo_robust.py                # 鲁棒方法演示脚本 ⭐新增
-├── compare_robust_methods.py     # 鲁棒方法对比实验 ⭐新增
-├── environment.yaml              # Conda环境配置
-└── README.md                     # 本文档
+├── environment.yaml             # Conda环境配置
+├── requirements.txt             # Pip依赖列表
+└── README.md                    # 本文档
 ```
+
+**🔄 重构说明：**
+- 所有脚本按功能分类到 `scripts/` 子目录
+- 输出文件统一管理在 `outputs/` 目录
+- 数据文件集中放在 `data/` 目录
+- 详细说明请查看 [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)
 
 ## 🚀 快速开始
 
@@ -50,16 +108,39 @@ conda activate machinelearning
 pip install numpy pandas matplotlib seaborn scikit-learn tqdm mplfonts
 ```
 
-### 2. 选择使用方式
+### 2. 统一CLI接口（推荐！✨新增）
+
+项目提供统一的命令行接口，简化训练、评估和可视化流程：
+
+```bash
+# 训练模型
+python main.py train --config configs/baseline.json
+
+# 评估模型
+python main.py evaluate --model model.joblib --data test.npz
+
+# 可视化训练结果
+python main.py visualize --joblib monitor.joblib --save output.png
+```
+
+**为什么使用CLI？**
+- ✅ 统一的命令接口，无需记忆多个脚本路径
+- ✅ 完整的帮助信息（`python main.py --help`）
+- ✅ 自动处理路径和环境设置
+- ✅ 更简洁的命令语法
+
+**详细文档：** [CLI使用指南](docs/CLI_GUIDE.md)
+
+### 3. 选择使用方式
 
 #### 🛡️ 方式A：鲁棒AdaBoost（推荐！解决噪声和过拟合）⭐新增
 
 ```bash
 # 快速演示
-python demo_robust.py
+python scripts/demo/demo_robust.py
 
 # 完整对比实验
-python compare_robust_methods.py
+python scripts/evaluation/compare_robust_methods.py
 ```
 
 **这会做什么？**
@@ -81,7 +162,7 @@ python compare_robust_methods.py
 #### 📈 方式B：过拟合可视化（研究过拟合过程）
 
 ```bash
-python visualize_overfitting.py
+python scripts/visualization/visualize_overfitting.py
 ```
 
 **这会做什么？**
@@ -103,10 +184,10 @@ python visualize_overfitting.py
 
 ```bash
 # 干净数据训练
-python train_with_clean_data.py
+python scripts/training/train_with_clean_data.py
 
 # 含噪声数据训练
-python train_with_noise_track.py
+python scripts/training/train_with_noise_track.py
 ```
 
 **这会做什么？**
@@ -123,7 +204,7 @@ python train_with_noise_track.py
 #### 🧪 方式D：泛化能力测试（视觉扰动鲁棒性）⭐新增
 
 ```bash
-python test_generalization.py
+python scripts/evaluation/test_generalization.py
 ```
 
 **这会做什么？**

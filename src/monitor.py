@@ -27,6 +27,7 @@ class BoostMonitor:
         # validation history
         self.val_acc_history = []
         self.val_f1_history = []
+        self.val_idx = []  # 记录验证发生的轮次索引（用于val-after-train模式）
 
         # scores on training data
         self.acc_on_train_data = []
@@ -71,9 +72,21 @@ class BoostMonitor:
         )
 
     def record_validation(self, iboost, acc, f1):
-        """记录验证集指标"""
+        """
+        记录验证集指标
+        
+        Parameters
+        ----------
+        iboost : int
+            当前轮次索引（0-based，表示当前是第几轮训练后的验证）
+        acc : float
+            验证集准确率
+        f1 : float
+            验证集F1分数
+        """
         self.val_acc_history.append(acc)
         self.val_f1_history.append(f1)
+        self.val_idx.append(iboost + 1)  # 存储1-based的轮次索引
 
         self._log_event(
             event_type="val",
