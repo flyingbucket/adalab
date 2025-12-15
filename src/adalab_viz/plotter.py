@@ -18,6 +18,7 @@ def visualize_training_data(
     )
 
     rounds = data["rounds"]
+    val_idx = data["val_idx"]
 
     # ----------------------------------------------------------------------
     # 1. 左上：噪声样本 vs 干净样本权重（核心：AdaBoost 嘘声放大机制）
@@ -134,7 +135,7 @@ def visualize_training_data(
     ax5 = axes[0, 2]
     if len(data["acc_on_train_data"]) > 0:
         ax5.plot(
-            rounds,
+            val_idx,
             data["acc_on_train_data"],
             "b-",
             linewidth=2,
@@ -145,7 +146,7 @@ def visualize_training_data(
         )
     if len(data["val_acc_history"]) > 0:
         ax5.plot(
-            rounds,
+            val_idx,
             data["val_acc_history"],
             "r-",
             linewidth=2,
@@ -166,7 +167,7 @@ def visualize_training_data(
     ax6 = axes[1, 2]
     if len(data["f1_on_training_data"]) > 0:
         ax6.plot(
-            rounds,
+            val_idx,
             data["f1_on_training_data"],
             "b-",
             linewidth=2,
@@ -177,7 +178,7 @@ def visualize_training_data(
         )
     if len(data["val_f1_history"]) > 0:
         ax6.plot(
-            rounds,
+            val_idx,
             data["val_f1_history"],
             "r-",
             linewidth=2,

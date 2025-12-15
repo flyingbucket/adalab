@@ -1,5 +1,6 @@
 name: machinelearning
 channels:
+  - conda-forge
   - defaults
 dependencies:
   - python=3.12
@@ -16,3 +17,6 @@ dependencies:
       - tqdm
       - ipykernel
       - mplfonts
+      - mkdocs
+      - mkdocs-material
+      - mkdocstrings[python]
