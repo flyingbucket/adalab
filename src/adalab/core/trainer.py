@@ -5,7 +5,7 @@
 import os
 import json
 import joblib
-from src.utils import train_and_save
+from src.adalab.workflow import train_and_save
 from .evaluator import evaluate
 
 
