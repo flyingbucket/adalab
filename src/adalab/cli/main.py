@@ -1,68 +1,64 @@
-"""
-主CLI入口 - 统一的命令行接口
-"""
+from __future__ import annotations
 
-import argparse
-import sys
-from .train import add_train_parser
-from .evaluate import add_evaluate_parser
-from .visualize import add_visualize_parser
+from argparse import ArgumentParser
+from pathlib import Path
+
+from adalab.core import ExperimentPipeline
 
 
-def main():
-    """
-    主CLI入口函数
-    """
-    parser = argparse.ArgumentParser(
-        prog='adalab',
-        description='AdaLab - AdaBoost实验平台命令行工具',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-示例用法:
-  # 训练模型
-  python main.py train --config configs/baseline.json
-  
-  # 评估模型
-  python main.py evaluate --model model.joblib --data test.npz
-  
-  # 可视化训练结果
-  python main.py visualize --joblib monitor.joblib --save output.png
-  python main.py visualize --csv results.csv --show
-        """
+def build_parser() -> ArgumentParser:
+    p = ArgumentParser(prog="adalab", description="AdaLab experiment runner (CLI)")
+
+    p.add_argument(
+        "--config",
+        type=str,
+        required=True,
+        help="Path to json config file",
     )
-    
-    parser.add_argument(
-        '--version',
-        action='version',
-        version='%(prog)s 1.0.0'
+    p.add_argument(
+        "--experiments-dir",
+        type=str,
+        default="experiments",
+        help="Base directory that stores experiment runs (default: experiments/)",
     )
-    
-    # 创建子命令
-    subparsers = parser.add_subparsers(
-        title='可用命令',
-        description='使用 `adalab <command> --help` 查看详细帮助',
-        dest='command',
-        required=True
+    p.add_argument(
+        "--course-folder",
+        type=str,
+        default="./data/test_images",
+        help="Course test folder used in evaluation (default: ./data/test_images)",
     )
-    
-    # 添加各个子命令
-    add_train_parser(subparsers)
-    add_evaluate_parser(subparsers)
-    add_visualize_parser(subparsers)
-    
-    # 解析参数
-    args = parser.parse_args()
-    
-    # 执行对应的命令
-    try:
-        result = args.func(args)
-        return result
-    except Exception as e:
-        print(f"❌ 错误: {e}", file=sys.stderr)
-        sys.exit(1)
+
+    group = p.add_mutually_exclusive_group(required=False)
+    group.add_argument(
+        "--viz",
+        action="store_true",
+        help="Train + eval + visualize after training (requires use_monitor=true)",
+    )
+    group.add_argument(
+        "--viz-only",
+        action="store_true",
+        help="Skip training; load existing experiment results then eval + visualize",
+    )
+
+    return p
 
 
-if __name__ == '__main__':
-    main()
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
 
+    pipe = ExperimentPipeline(experiments_dir=args.experiments_dir)
 
+    config_path = Path(args.config)
+
+    if args.viz_only:
+        pipe.run_eval_viz_only(config_path=config_path)
+        return 0
+
+    # 默认：训练 + 评估；若 --viz 则再可视化
+    pipe.run_train_eval(
+        config_path=config_path,
+        course_folder=args.course_folder,
+        do_viz=bool(args.viz),
+    )
+    return 0

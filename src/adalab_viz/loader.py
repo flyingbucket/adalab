@@ -7,13 +7,25 @@ from adalab.monitor import BoostMonitor
 
 # 兼容旧 joblib 路径
 import sys
+import warnings
 
-try:
-    from adalab.monitor import BoostMonitor
 
-    sys.modules["src.monitor"] = sys.modules["adalab.monitor"]
-except Exception:
-    pass
+def _patch_legacy_monitor_path():
+    """
+    Make joblib able to load old experiments serialized as `src.monitor.*`.
+    """
+    try:
+        import adalab.monitor
+
+        sys.modules["src.monitor"] = adalab.monitor
+    except Exception as e:
+        warnings.warn(
+            f"[adalab_viz] Failed to patch legacy path 'src.monitor': {e}",
+            RuntimeWarning,
+        )
+
+
+_patch_legacy_monitor_path()
 
 
 def load_from_csv(csv_path):

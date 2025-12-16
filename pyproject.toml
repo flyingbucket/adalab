@@ -19,6 +19,9 @@ dependencies = [
   "mplfonts",
 ]
 
+[project.scripts]
+adalab = "adalab.cli.main:main"
+
 [project.optional-dependencies]
 viz = ["matplotlib", "mplfonts", "seaborn"]
 

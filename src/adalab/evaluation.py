@@ -9,6 +9,7 @@
 该模块主要为实验分析与前端可视化提供评估数据。
 """
 
+from __future__ import annotations
 from joblib import Parallel, delayed
 import numpy as np
 
@@ -20,42 +21,102 @@ from sklearn.metrics import (
 )
 
 
-def evaluate(y_true, y_pred, title="Evaluation"):
-    """对完整模型的预测结果进行评估。
+from typing import Any, Dict, Optional
+from sklearn.metrics import classification_report, accuracy_score
 
-    该函数用于在模型训练完成后，
-    对最终集成模型在指定数据集上的预测结果进行一次性评估，
-    并输出常用分类指标。
 
-    Args:
-        y_true (array-like): 真实标签。
-        y_pred (array-like): 模型预测标签。
-        title (str, optional): 评估结果的标题，用于日志输出。
-
-    Returns:
-        dict: 包含以下键值的评估结果字典：
-            - accuracy: 准确率
-            - precision_macro: macro 平均精确率
-            - recall_macro: macro 平均召回率
-            - f1_macro: macro 平均 F1 分数
+def evaluate(
+    y_true,
+    y_pred,
+    *,
+    labels: Optional[list[int]] = None,
+    target_names: Optional[list[str]] = None,
+    title: Optional[str] = None,
+    zero_division: int = 0,
+) -> Dict[str, Any]:
     """
-    print(f"\n=== {title} ===")
+    Basic evaluation for multi-class classification.
 
-    acc = accuracy_score(y_true, y_pred)
-    prec_macro = precision_score(y_true, y_pred, average="macro", zero_division=0)
-    rec_macro = recall_score(y_true, y_pred, average="macro", zero_division=0)
-    f1_macro = f1_score(y_true, y_pred, average="macro", zero_division=0)
+    Focus:
+    - per-class recall
+    - overall accuracy
 
-    print(f"Accuracy:       {acc:.4f}")
-    print(f"Precision_macro:{prec_macro:.4f}")
-    print(f"Recall_macro:   {rec_macro:.4f}")
-    print(f"F1_macro:       {f1_macro:.4f}")
+    Designed as a minimal, research-friendly evaluator.
+    """
+
+    if title is not None:
+        print(f"\n=== {title} ===")
+
+    # sklearn classification report (structured)
+    report = classification_report(
+        y_true,
+        y_pred,
+        labels=labels,
+        target_names=target_names,
+        zero_division=zero_division,
+        output_dict=True,
+    )
+
+    accuracy = accuracy_score(y_true, y_pred)
+
+    # ---- extract per-class recall ----
+    per_class_recall: Dict[str, float] = {}
+
+    for key, value in report.items():
+        # skip aggregate entries
+        if key in {"accuracy", "macro avg", "weighted avg"}:
+            continue
+        per_class_recall[key] = value["recall"]
+
+    # ---- minimal CLI output ----
+    print(f"Accuracy: {accuracy:.4f}")
+    print("Per-class recall:")
+    for cls, rec in per_class_recall.items():
+        print(f"  class {cls}: recall = {rec:.4f}")
+
     return {
-        "accuracy": acc,
-        "precision_macro": prec_macro,
-        "recall_macro": rec_macro,
-        "f1_macro": f1_macro,
+        "accuracy": accuracy,
+        "per_class_recall": per_class_recall,
+        "raw_report": report,  # keep full info for later use
     }
+
+
+# def evaluate(y_true, y_pred, title="Evaluation"):
+#     """对完整模型的预测结果进行评估。
+#
+#     该函数用于在模型训练完成后，
+#     对最终集成模型在指定数据集上的预测结果进行一次性评估，
+#     并输出常用分类指标。
+#
+#     Args:
+#         y_true (array-like): 真实标签。
+#         y_pred (array-like): 模型预测标签。
+#         title (str, optional): 评估结果的标题，用于日志输出。
+#
+#     Returns:
+#         dict: 包含以下键值的评估结果字典：
+#             - accuracy: 准确率
+#             - precision_macro: macro 平均精确率
+#             - recall_macro: macro 平均召回率
+#             - f1_macro: macro 平均 F1 分数
+#     """
+#     print(f"\n=== {title} ===")
+#
+#     acc = accuracy_score(y_true, y_pred)
+#     prec_macro = precision_score(y_true, y_pred, average="macro", zero_division=0)
+#     rec_macro = recall_score(y_true, y_pred, average="macro", zero_division=0)
+#     f1_macro = f1_score(y_true, y_pred, average="macro", zero_division=0)
+#
+#     print(f"Accuracy:       {acc:.4f}")
+#     print(f"Precision_macro:{prec_macro:.4f}")
+#     print(f"Recall_macro:   {rec_macro:.4f}")
+#     print(f"F1_macro:       {f1_macro:.4f}")
+#     return {
+#         "accuracy": acc,
+#         "precision_macro": prec_macro,
+#         "recall_macro": rec_macro,
+#         "f1_macro": f1_macro,
+#     }
 
 
 def _compute_round_metric(t, alphas, est_preds, classes, n_classes, y_indices):
