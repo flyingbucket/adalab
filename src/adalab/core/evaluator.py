@@ -99,3 +99,4 @@ def evaluate_detailed(y_true, y_pred, title="Evaluation"):
         "confusion_matrix": cm.tolist(),
     }
 
+

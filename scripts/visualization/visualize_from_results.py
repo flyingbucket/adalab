@@ -321,10 +321,11 @@ def visualize_training_data(data, save_path=None):
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         print(f"\n✓ Figure saved to: {save_path}")
+        plt.close(fig)
     else:
         plt.show()
     
-    plt.close()
+    return fig
 
 
 def print_summary(data):
