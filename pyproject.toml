@@ -6,17 +6,30 @@ build-backend = "setuptools.build_meta"
 name = "adalab"
 version = "0.1.0"
 description = "A lightweight backend for AdaBoost behavior experiments with monitoring, noise injection, and workflow management."
-authors = [{ name = "flyingbucket" }]
+authors = [{ name = "flyingbucket" }, { email = "2311067@mail.nankai.edu.cn" }]
 readme = "README.md"
 requires-python = ">=3.12"
 
-dependencies = [
-  "numpy>=2.3",
-  "pandas>=2.3",
-  "scikit-learn>=1.7",
-  "matplotlib",
-  "tqdm",
-  "mplfonts",
+dependencies = ["numpy>=2.3", "pandas>=2.3", "scikit-learn>=1.7", "tqdm"]
+
+license = { file = "LICENSE" }
+
+keywords = [
+  "AdaBoost",
+  "boosting",
+  "machine-learning",
+  "robustness",
+  "overfitting",
+  "experiment-framework",
+]
+
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
 ]
 
 [project.scripts]
@@ -25,9 +38,9 @@ adalab = "adalab.cli.main:main"
 [project.optional-dependencies]
 viz = ["matplotlib", "mplfonts", "seaborn"]
 
+[project.urls]
+Repository = "https://github.com/Frederick2313072/ML"
+Issues = "https://github.com/Frederick2313072/ML/issues"
+
 [tool.setuptools.packages.find]
 where = ["src"]
-
-# include package data if needed
-# [tool.setuptools.package-data]
-# "adalab" = ["*.json", "*.txt"]

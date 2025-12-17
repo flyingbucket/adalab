@@ -6,7 +6,7 @@
   "data": {
     // 噪声配置
     "noise_config": {
-        "ratio": 0.2
+        "ratio": 0.2  //噪声数据占比
         "label_flip": true,               //标签翻转
         "gaussian": {"std": 0.05},                  //高斯噪声
         "salt_pepper": {"amount": 0.02},            //椒盐噪声
@@ -41,8 +41,8 @@
   "model": {
     "estimator": {
       "max_depth": 2,               // 基学习器（弱分类器）深度
-      "criterion": "entropy",       // 高维下更快、更稳定
-      "max_features": 0.25,         // 每棵树只用 25% 特征（提速 3–5 倍）
+      "criterion": "entropy",       // "entropy"高维下更快、更稳定,默认为"genni"
+      "max_features": 0.25,         // 每棵树只用 25% 特征
       "random_state": 42
     },
     "n_estimators": 500,            // AdaBoost 的弱分类器数
