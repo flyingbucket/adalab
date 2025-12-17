@@ -139,6 +139,4 @@ adalab --config configs/exp1.json --viz-only
 
  **配置文件的详细说明请参考：**
 
-```
-docs/config.md
-```
+[`docs/config.md`](docs/config.md)
