@@ -52,7 +52,9 @@ def main(argv: list[str] | None = None) -> int:
     config_path = Path(args.config)
 
     if args.viz_only:
-        pipe.run_eval_viz_only(config_path=config_path)
+        pipe.run_eval_viz_only(
+            config_path=config_path, course_folder=args.course_folder
+        )
         return 0
 
     # 默认：训练 + 评估；若 --viz 则再可视化
