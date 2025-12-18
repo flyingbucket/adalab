@@ -14,9 +14,11 @@ from __future__ import annotations
 import os
 import warnings
 from typing import Any, Dict, Tuple, Optional
+from dataclasses import dataclass
 
 import numpy as np
 import cv2
+from scipy.ndimage import shift
 from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
 from skimage.feature import hog
@@ -25,6 +27,41 @@ from numpy.typing import NDArray
 FloatArray = NDArray[np.floating]
 IntArray = NDArray[np.integer]
 Int64Array = NDArray[np.int64]
+
+
+@dataclass
+class DataSplitForTraining:
+    """数据划分结果的数据结构。
+
+    用于统一封装一次实验中使用的训练/测试数据及其噪声标注信息，
+    作为 workflow 各阶段之间传递的数据载体。
+
+    Attributes:
+        X_train (np.ndarray): 训练集特征矩阵，形状为 (n_train, d)。
+        X_test (np.ndarray): 测试集特征矩阵，形状为 (n_test, d)。
+        y_train (np.ndarray): 训练集标签向量。
+        y_test (np.ndarray): 测试集标签向量。
+        noise_idx (np.ndarray): 训练集中被标记为噪声样本的索引。
+        clean_idx (np.ndarray): 训练集中被标记为干净样本的索引。
+        X_test_784(np.ndarray): MNIST测试集特征提取前的784维向量。
+    """
+
+    X_train: NDArray
+    X_test: NDArray
+    y_train: NDArray
+    y_test: NDArray
+    noise_idx: NDArray
+    clean_idx: NDArray
+    X_test_784: NDArray
+
+
+@dataclass
+class DataSplitForTesting:
+    X_mnist_ori: NDArray
+    X_mnist_shift: Dict[str, NDArray]
+    X_course: NDArray
+    y_mnist: NDArray
+    y_course: NDArray
 
 
 def preprocess_for_mnist(path):
@@ -92,7 +129,79 @@ def preprocess_for_mnist(path):
     return arr_final.reshape(1, -1), canvas
 
 
-class DataPreparation:
+class FeatureExtractor:
+    def __init__(self, use_feature, feature_config) -> None:
+        self.use_feature = use_feature
+        self.feature_config = feature_config
+
+    def extract_hog(self, X, hog_conf: Dict):
+        """从输入图像中提取 HOG 特征。
+
+        Args:
+            X (np.ndarray): 展平的 MNIST 图像数据。
+
+        Returns:
+            np.ndarray: HOG 特征矩阵。
+        """
+        X_reshaped = X.reshape(-1, 28, 28)
+        feats = []
+        for img in X_reshaped:
+            f = hog(
+                img,
+                orientations=hog_conf["hog_orientations"],
+                pixels_per_cell=hog_conf["hog_pixels_per_cell"],
+                cells_per_block=hog_conf["hog_cells_per_block"],
+                block_norm="L2-Hys",
+            )
+            feats.append(f)
+        return np.array(feats)
+
+    def extract_hu(self, X, hu_conf):
+        """从输入图像中提取 Hu Moments 特征。
+
+        Args:
+            X (np.ndarray): 展平的 MNIST 图像数据。
+
+        Returns:
+            np.ndarray: Hu Moments 特征矩阵。
+        """
+        X_reshaped = X.reshape(-1, 28, 28)
+        feats = []
+        for img in X_reshaped:
+            moments = cv2.HuMoments(cv2.moments(img)).flatten()
+            if hu_conf["log_scale"]:
+                moments = -np.sign(moments) * np.log10(np.abs(moments))
+            feats.append(moments)
+        return np.array(feats)
+
+    def apply_feature(self, X):
+        """根据配置对训练集与测试集应用特征提取。
+
+        特征类型由 ``self.use_feature`` 控制：
+        - "original": 使用原始像素
+        - "hog": 使用 HOG 特征
+        - "hu": 使用 Hu Moments
+        """
+        if self.use_feature == "original":
+            print("[Data] No feature extracted,using original images")
+            return X
+
+        elif self.use_feature == "hog":
+            print("[Data] Extracting HOG features...")
+            hog_conf = self.feature_config["hog_params"]
+            X_feat = self.extract_hog(X, hog_conf)
+
+        elif self.use_feature == "hu":
+            hu_conf = self.feature_config["hu_params"]
+            print("[Data] Extracting Hu moments...")
+            X_feat = self.extract_hu(X, hu_conf)
+
+        else:
+            raise ValueError("[Data] Invalid feature type")
+        return X_feat
+
+
+class DataPreparationForTraining:
     """MNIST 数据准备与噪声注入调度器。
 
     该类负责完成一次实验中所有与数据相关的工作，包括：
@@ -127,12 +236,7 @@ class DataPreparation:
         test_size=0.2,
         use_feature="original",
         random_state=42,
-        # HOG 参数
-        hog_orientations=9,
-        hog_pixels_per_cell=(4, 4),
-        hog_cells_per_block=(2, 2),
-        # Hu Moments 参数
-        hu_log_scale=True,
+        feature_config: Optional[Dict[str, Any]] = None,
     ):
         """初始化数据准备器。
 
@@ -150,14 +254,7 @@ class DataPreparation:
         self.test_size = test_size
         self.use_feature = use_feature
         self.random_state = random_state
-
-        # HOG settings
-        self.hog_orientations = hog_orientations
-        self.hog_pixels_per_cell = hog_pixels_per_cell
-        self.hog_cells_per_block = hog_cells_per_block
-
-        # Hu settings
-        self.hu_log_scale = hu_log_scale
+        self.feature_config = feature_config or {}
 
         # empty init
         self.X_train = np.empty((0, 0), dtype=np.float32)
@@ -195,6 +292,9 @@ class DataPreparation:
         self.test_idx = np.asarray(test_idx, dtype=np.int64)
 
         self.X_train_raw = np.asarray(X_train, dtype=np.float32)
+        self.X_test_raw = np.asarray(X_test, dtype=np.float32).copy()
+        # prepare函数中要返回原始MNIST测试集，赋值给DataSplitForTraining.X_test_784,
+        # 将来传给prep_test_data_from_config来构造shift测试集
         self.X_test = np.asarray(X_test, dtype=np.float32)
         self.y_train_raw = np.asarray(y_train, dtype=np.int64)
         self.y_test = np.asarray(y_test, dtype=np.int64)
@@ -233,9 +333,10 @@ class DataPreparation:
 
         # 将所有像素噪声叠加到相同 noise_indices 样本上
         for noise_type, params in noise_items:
-            if noise_type == "label_flip" and params:
-                y = pert.flip_labels(y, noise_indices=self.noise_indices)
-                print(f"[Data] Label flip: {len(noise_indices)} indices selected")
+            if noise_type == "label_flip":
+                if params is True:
+                    y = pert.flip_labels(y, noise_indices=self.noise_indices)
+                    print(f"[Data] Label flip: {len(noise_indices)} indices selected")
 
             elif noise_type == "gaussian":
                 std = params.get("std", 0.1)
@@ -287,80 +388,22 @@ class DataPreparation:
             f"[Data] Noisy Train: {len(self.train_noise_indices)} noise, {len(self.train_clean_indices)} clean"
         )
 
-    # 特征提取
-    def extract_hog(self, X):
-        """从输入图像中提取 HOG 特征。
-
-        Args:
-            X (np.ndarray): 展平的 MNIST 图像数据。
-
-        Returns:
-            np.ndarray: HOG 特征矩阵。
-        """
-        X_reshaped = X.reshape(-1, 28, 28)
-        feats = []
-        for img in X_reshaped:
-            f = hog(
-                img,
-                orientations=self.hog_orientations,
-                pixels_per_cell=self.hog_pixels_per_cell,
-                cells_per_block=self.hog_cells_per_block,
-                block_norm="L2-Hys",
-            )
-            feats.append(f)
-        return np.array(feats)
-
-    def extract_hu(self, X):
-        """从输入图像中提取 Hu Moments 特征。
-
-        Args:
-            X (np.ndarray): 展平的 MNIST 图像数据。
-
-        Returns:
-            np.ndarray: Hu Moments 特征矩阵。
-        """
-        X_reshaped = X.reshape(-1, 28, 28)
-        feats = []
-        for img in X_reshaped:
-            moments = cv2.HuMoments(cv2.moments(img)).flatten()
-            if self.hu_log_scale:
-                moments = -np.sign(moments) * np.log10(np.abs(moments))
-            feats.append(moments)
-        return np.array(feats)
-
-    def apply_feature(self):
-        """根据配置对训练集与测试集应用特征提取。
-
-        特征类型由 ``self.use_feature`` 控制：
-        - "original": 使用原始像素
-        - "hog": 使用 HOG 特征
-        - "hu": 使用 Hu Moments
-        """
-        if self.use_feature == "original":
-            print("[Data] No feature extracted,using original images")
-            pass
-
-        elif self.use_feature == "hog":
-            print("[Data] Extracting HOG features...")
-            self.X_train = self.extract_hog(self.X_train)
-            self.X_test = self.extract_hog(self.X_test)
-
-        elif self.use_feature == "hu":
-            print("[Data] Extracting Hu moments...")
-            self.X_train = self.extract_hu(self.X_train)
-            self.X_test = self.extract_hu(self.X_test)
-
-        else:
-            raise ValueError("[Data] Invalid feature type")
-
-    # 总调度函数
+    # 训练阶段总调度函数
 
     def prepare(
         self,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        """执行完整的数据准备流程。
+    ) -> Tuple[
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+    ]:
+        """执行训练阶段完整的数据准备流程。
 
-        该方法是数据准备阶段的统一入口，
+        该方法是训练前数据准备阶段的统一入口，
         会依次执行下载、划分、噪声注入与特征提取。
 
         Returns:
@@ -375,8 +418,9 @@ class DataPreparation:
         self.download_mnist()
         self.split()
         self.inject_noise()
-        # self.split()
-        self.apply_feature()
+        feat_extractor = FeatureExtractor(self.use_feature, self.feature_config)
+        self.X_train = feat_extractor.apply_feature(self.X_train)
+        self.X_test = feat_extractor.apply_feature(self.X_test)
         return (
             self.X_train,
             self.X_test,
@@ -384,7 +428,50 @@ class DataPreparation:
             self.y_test,
             self.train_noise_indices,
             self.train_clean_indices,
+            self.X_test_raw,
         )
+
+
+class DataPreparationForTesting:
+    def __init__(
+        self,
+        test_shift_config,
+        use_feature,
+        feature_config,
+        train_split: DataSplitForTraining,
+        random_state=42,
+    ) -> None:
+        self.test_shift_config = test_shift_config
+        self.use_feature = use_feature
+        self.feature_config = feature_config
+        self.train_split = train_split
+        self.pert = MNISTPerturber(random_state)
+
+    def apply_shift(self, X: NDArray, config: Dict) -> NDArray:
+        X_shift = X.copy()
+        for shift_type, params in config.items():
+            if shift_type == "contrast":
+                fr = params.get("factor_range", (0.5, 1.5))
+                X_shift = self.pert.adjust_contrast(X_shift, factor_range=fr)
+
+            elif shift_type == "brightness":
+                sr = params.get("shift_range", 0.3)
+                X_shift = self.pert.add_brightness_shift(X_shift, shift_range=sr)
+
+            elif shift_type == "rotate":
+                ar = params.get("angle_range", 15)
+                X_shift = self.pert.rotate_slight(X_shift, angle_range=ar)
+        return X_shift
+
+    def get_shift_x_test(self) -> Dict[str, NDArray]:
+        shift_tests = {}
+        feat_extractor = FeatureExtractor(self.use_feature, self.feature_config)
+        # X = feat_extractor.apply_feature(X_raw)
+        for shift_name, method in self.test_shift_config.items():
+            X_test_shift = self.apply_shift(self.train_split.X_test_784, method)
+            shift_tests[shift_name] = feat_extractor.apply_feature(X_test_shift)
+            print(f"[Data] Created shift test data with config: {shift_name}")
+        return shift_tests
 
     def prepare_course_data(self, folder):
         """处理课程提供的真实拍照数字数据。
@@ -418,22 +505,18 @@ class DataPreparation:
 
         X_raw = np.array(X_list)
         y = np.array(y_list, dtype=np.int64)
-
-        if self.use_feature == "original":
-            X = X_raw
-
-        elif self.use_feature == "hog":
-            print("[Data] Extracting HOG features for course data...")
-            X = self.extract_hog(X_raw)
-
-        elif self.use_feature == "hu":
-            print("[Data] Extracting Hu moments for course data...")
-            X = self.extract_hu(X_raw)
-
-        else:
-            raise ValueError(f"Invalid feature type: {self.use_feature}")
-
+        feat_extractor = FeatureExtractor(self.use_feature, self.feature_config)
+        X = feat_extractor.apply_feature(X_raw)
         return X, y
+
+    def prepare(self, folder) -> DataSplitForTesting:
+        X_mnist_ori = self.train_split.X_test
+        y_mnist = self.train_split.y_test
+        X_mnist_shift = self.get_shift_x_test()
+        X_course, y_course = self.prepare_course_data(folder)
+        return DataSplitForTesting(
+            X_mnist_ori, X_mnist_shift, X_course, y_mnist, y_course
+        )
 
 
 class MNISTPerturber:
@@ -480,21 +563,6 @@ class MNISTPerturber:
         )
 
         return y_noisy
-
-    def add_brightness_shift(self, X, shift_range=0.3):
-        """
-        添加亮度偏移
-
-        Parameters
-        ----------
-        X : array
-            原始数据 [0, 1]
-        shift_range : float
-            亮度偏移范围 [-shift_range, shift_range]
-        """
-        shift = self.rng.uniform(-shift_range, shift_range, size=len(X))
-        X_perturbed = X + shift[:, np.newaxis]
-        return np.clip(X_perturbed, 0, 1)
 
     def add_gaussian_noise(self, X, noise_std=0.1):
         """
@@ -556,6 +624,21 @@ class MNISTPerturber:
             X_perturbed[i] = blurred.ravel()
 
         return X_perturbed
+
+    def add_brightness_shift(self, X, shift_range=0.3):
+        """
+        添加亮度偏移
+
+        Parameters
+        ----------
+        X : array
+            原始数据 [0, 1]
+        shift_range : float
+            亮度偏移范围 [-shift_range, shift_range]
+        """
+        shift = self.rng.uniform(-shift_range, shift_range, size=len(X))
+        X_perturbed = X + shift[:, np.newaxis]
+        return np.clip(X_perturbed, 0, 1)
 
     def adjust_contrast(self, X, factor_range=(0.5, 1.5)):
         """

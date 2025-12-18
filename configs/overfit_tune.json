@@ -4,7 +4,8 @@
     },
     "data": {
       "noise_config": {
-          "label_flip": {"ratio": 0.2},
+          "ratio": 0.2
+          "label_flip": true,
           "gaussian": {"std": 0.05},
           "salt_pepper": {"amount": 0.02},
           "rotate": {"angle_range": 10},

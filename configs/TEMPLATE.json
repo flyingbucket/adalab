@@ -4,32 +4,62 @@
   },
 
   "data": {
-    // 噪声配置
-    "noise_config": {
-        "ratio": 0.2  //噪声数据占比
-        "label_flip": true,               //标签翻转
-        "gaussian": {"std": 0.05},                  //高斯噪声
-        "salt_pepper": {"amount": 0.02},            //椒盐噪声
-        "contrast": {"factor_range": [0.7, 1.3]},   //对比度
-        "rotate": {"angle_range": 10},              //旋转
-        "blur": {"kernel_size": 3},                 //高斯模糊
-        "brightness": {"shift_range": 0.2}          //亮度
-      },
     "test_size": 0.2,               // 测试集划分比例
     "random_state": 42,             // 随机种子
     "use_feature": "hog",           // 可选： "original" / "hog" / "hu"
 
-    // HOG 特征参数（use_feature = "hog" 时生效）
-    "hog_params": {
-      "orientations": 9,
-      "pixels_per_cell": [2, 2],
-      "cells_per_block": [2, 2]
+    "feature_config":{
+      // 以下特征只能选择其一
+      // HOG 特征参数（use_feature = "hog" 时生效）
+      "hog_params": {
+        "orientations": 9,
+        "pixels_per_cell": [2, 2],
+        "cells_per_block": [2, 2]
+      },
+
+      // HU 矩特征参数（use_feature = "hu" 时生效）
+      "hu_params": {
+        "log_scale": true
+      }
     },
 
-    // HU 矩特征参数（use_feature = "hu" 时生效）
-    "hu_params": {
-      "log_scale": true
+    // 噪声配置
+    "training_noise_config": {
+        "ratio": 0.2  //噪声数据占比
+        "label_flip": true,               //标签翻转
+        "gaussian": {"std": 0.05},                  //高斯噪声
+        "salt_pepper": {"amount": 0.02},            //椒盐噪声
+        "blur": {"kernel_size": 3},                 //高斯模糊
+        "contrast": {"factor_range": [0.7, 1.3]},   //对比度
+        "rotate": {"angle_range": 10},              //旋转
+        "brightness": {"shift_range": 0.2}          //亮度
+      },
+
+    "test_shift_config": {
+      //此处可以防止任意数量的键值对
+      //每个键值对表示一种测试集的风格构造策略，key可以根据合适的语义任意取名
+      "contrast": {
+        "factor_range": [0.7, 1.3]
+      },
+      "rotate": {
+        "angle_range": 10
+      },
+      "brightness": {
+        "shift_range": 0.2
+      },
+      "multiple_disturbances_test": {
+        "contrast": {
+          "factor_range": [0.5, 1.5]
+        },
+        "rotate": {
+          "angle_range": 15
+        },
+        "brightness": {
+          "shift_range": 0.3
+        }
+      }
     }
+
   },
 
   "monitor": {

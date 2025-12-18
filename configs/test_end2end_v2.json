@@ -1,0 +1,75 @@
+{
+  "experiment": {
+    "name": "quick_test_experiment"
+  },
+  "data": {
+    "test_size": 0.2,
+    "random_state": 42,
+    "use_feature": "hu",
+    "feature_config": {
+      "hu_params": {
+        "log_scale": true
+      }
+    },
+    "training_noise_config": {
+      "ratio": 0.1,
+      "label_flip": false,
+      "gaussian": {
+        "std": 0.01
+      },
+      "salt_pepper": {
+        "amount": 0.01
+      },
+      "blur": {
+        "kernel_size": 1
+      },
+      "contrast": {
+        "factor_range": [0.8, 1.2]
+      },
+      "rotate": {
+        "angle_range": 5
+      },
+      "brightness": {
+        "shift_range": 0.1
+      }
+    },
+    "test_shift_config": {
+      "contrast": {
+        "factor_range": [0.8, 1.2]
+      },
+      "rotate": {
+        "angle_range": 5
+      },
+      "brightness": {
+        "shift_range": 0.1
+      },
+      "multiple_disturbances_test": {
+        "contrast": {
+          "factor_range": [0.7, 1.3]
+        },
+        "rotate": {
+          "angle_range": 10
+        },
+        "brightness": {
+          "shift_range": 0.2
+        }
+      }
+    }
+  },
+  "monitor": {
+    "use_monitor": true,
+    "is_data_noisy": true,
+    "checkpoint_interval": 10
+  },
+  "model": {
+    "estimator": {
+      "max_depth": 2,
+      "criterion": "entropy",
+      "max_features": 0.25,
+      "random_state": 42
+    },
+    "n_estimators": 100,
+    "learning_rate": 0.5,
+    "random_state": 42
+  }
+}

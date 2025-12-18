@@ -21,11 +21,17 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
+from skimage import feature
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier
 
 from .monitor import BoostMonitor
-from .data import DataPreparation
+from .data import (
+    DataSplitForTraining,
+    DataSplitForTesting,
+    DataPreparationForTraining,
+    DataPreparationForTesting,
+)
 from .patch import AdaBoostClfWithMonitor
 from .evaluation import val_after_train_parallel
 from .io import dump_compressed
@@ -39,32 +45,6 @@ try:
     sys.modules["src.monitor"] = sys.modules["adalab.monitor"]
 except Exception:
     pass
-
-
-@dataclass
-class DataSplit:
-    """数据划分结果的数据结构。
-
-    用于统一封装一次实验中使用的训练/测试数据及其噪声标注信息，
-    作为 workflow 各阶段之间传递的数据载体。
-
-    Attributes:
-        X_train (np.ndarray): 训练集特征矩阵，形状为 (n_train, d)。
-        X_test (np.ndarray): 测试集特征矩阵，形状为 (n_test, d)。
-        y_train (np.ndarray): 训练集标签向量。
-        y_test (np.ndarray): 测试集标签向量。
-        noise_idx (np.ndarray): 训练集中被标记为噪声样本的索引。
-        clean_idx (np.ndarray): 训练集中被标记为干净样本的索引。
-        prep (DataPreparation): 生成该数据划分的 DataPreparation 实例。
-    """
-
-    X_train: np.ndarray
-    X_test: np.ndarray
-    y_train: np.ndarray
-    y_test: np.ndarray
-    noise_idx: np.ndarray
-    clean_idx: np.ndarray
-    prep: DataPreparation
 
 
 @dataclass(frozen=True)
@@ -238,8 +218,8 @@ def safe_exp_dir(exp_name, base_dir="experiments"):
     return new_exp_dir
 
 
-def prep_data_from_config(config):
-    """根据配置文件准备实验数据。
+def prep_training_data_from_config(config) -> DataSplitForTraining:
+    """根据配置文件准备训练数据。
 
     该函数负责解析数据相关配置，构造 DataPreparation，
     并生成训练/测试数据及噪声索引。
@@ -248,33 +228,49 @@ def prep_data_from_config(config):
         config (dict): 实验配置字典。
 
     Returns:
-        DataSplit: 包含数据划分结果及相关元信息的对象。
+        DataSplitForTraining: 包含数据划分结果及相关元信息的对象。
     """
     data_cfg = config["data"]
 
-    # 读取 HOG 参数
-    hog_cfg = data_cfg.get("hog_params", {})
-    hog_orient = hog_cfg.get("orientations", 9)
-    hog_ppc = tuple(hog_cfg.get("pixels_per_cell", (4, 4)))
-    hog_cpb = tuple(hog_cfg.get("cells_per_block", (2, 2)))
-
-    # 读取 HU 参数
-    hu_cfg = data_cfg.get("hu_params", {})
-    hu_log_scale = hu_cfg.get("log_scale", True)
-
+    feature_config = data_cfg["feature_config"]
     # 构建 DataPreparation
-    prep = DataPreparation(
-        noise_config=data_cfg["noise_config"],
+    prep = DataPreparationForTraining(
+        noise_config=data_cfg["training_noise_config"],
         test_size=data_cfg["test_size"],
         use_feature=data_cfg.get("use_feature", "original"),
         random_state=data_cfg["random_state"],
-        hog_orientations=hog_orient,
-        hog_pixels_per_cell=hog_ppc,
-        hog_cells_per_block=hog_cpb,
-        hu_log_scale=hu_log_scale,
+        feature_config=feature_config,
     )
-    X_train, X_test, y_train, y_test, noise_idx, clean_idx = prep.prepare()
-    return DataSplit(X_train, X_test, y_train, y_test, noise_idx, clean_idx, prep)
+    X_train, X_test, y_train, y_test, noise_idx, clean_idx, X_test_784 = prep.prepare()
+    return DataSplitForTraining(
+        X_train, X_test, y_train, y_test, noise_idx, clean_idx, X_test_784
+    )
+
+
+def prep_testing_data_from_config(config, train_split, folder) -> DataSplitForTesting:
+    """根据配置文件准备测试数据。
+
+    Args:
+        config (dict): 实验配置字典
+        train_split (DataPreparationForTraining): 训练数据
+        folder(str | Path): 课程数据目录
+
+    Returns:
+        DataSplitForTesting: 包含数据划分结果及相关元信息的对象。
+    """
+    data_cfg = config["data"]
+
+    feature_config = data_cfg["feature_config"]
+    test_shift_config = data_cfg["test_shift_config"]
+    # 构建 DataPreparation
+    prep = DataPreparationForTesting(
+        test_shift_config=test_shift_config,
+        use_feature=data_cfg.get("use_feature", "original"),
+        feature_config=feature_config,
+        train_split=train_split,
+        random_state=data_cfg["random_state"],
+    )
+    return prep.prepare(folder)
 
 
 def build_experiment(config_path):
@@ -304,7 +300,7 @@ def build_experiment(config_path):
     with open(layout.config_path, "w") as fw:
         json.dump(config, fw, indent=4)
 
-    split = prep_data_from_config(config)
+    split = prep_training_data_from_config(config)
 
     # === 构造 Monitor 和 模型===
     monitor_cfg = config["monitor"]
@@ -358,7 +354,7 @@ def train_and_save(
 ) -> tuple[
     Union[AdaBoostClassifier, AdaBoostClfWithMonitor],
     Optional[BoostMonitor],
-    DataSplit,
+    DataSplitForTraining,
     ExperimentPaths,
     ArtifactPaths,
 ]:

@@ -4,9 +4,29 @@ import re
 import json
 import datetime as dt
 import warnings
+import joblib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Union, Tuple
+
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.model_selection import train_test_split
+
+from adalab.monitor import BoostMonitor
+from adalab.patch import AdaBoostClfWithMonitor
+from adalab.workflow import (
+    ArtifactPaths,
+    ExperimentPaths,
+    load_config,
+    train_and_save,
+    prep_training_data_from_config,
+    prep_testing_data_from_config,
+)
+from adalab.evaluation import evaluate
+from adalab.data import (
+    DataSplitForTesting,
+    DataSplitForTraining,
+)
 
 
 @dataclass(frozen=True)
@@ -28,28 +48,36 @@ class ExperimentPipeline:
     def run_train_eval(
         self,
         config_path: str | Path,
-        course_folder: str = "test_data",
+        course_folder: str = "./data/test_images",
         do_viz: bool = False,
-    ) -> Tuple[Any, Any, Any, Any, Any, EvalOutputs]:
+    ) -> Tuple[
+        Union[AdaBoostClassifier, AdaBoostClfWithMonitor],
+        Union[BoostMonitor, None],
+        DataSplitForTraining,
+        DataSplitForTesting,
+        ExperimentPaths,
+        ArtifactPaths,
+        EvalOutputs,
+    ]:
         """
         执行：训练 + 评估 (+ 可选可视化)
 
         返回：
             (clf, monitor, split, layout, artifacts, eval_outputs)
         """
-        from adalab.workflow import train_and_save
 
         config_path = Path(config_path)
         config = json.loads(config_path.read_text(encoding="utf-8"))
 
         print("\033[36m[Pipeline] Starting training...\n\033[0m")
 
-        clf, monitor, split, layout, artifacts = train_and_save(str(config_path))
-
+        clf, monitor, train_split, layout, artifacts = train_and_save(str(config_path))
+        test_split = prep_testing_data_from_config(config, train_split, course_folder)
         # evaluate
         scores = self._run_eval(
             clf=clf,
-            split=split,
+            train_split=train_split,
+            test_split=test_split,
             course_folder=course_folder,
             result_dir=Path(layout.result_dir),
         )
@@ -67,13 +95,14 @@ class ExperimentPipeline:
                 experiment_name=config["experiment"]["name"],
             )
 
-        return clf, monitor, split, layout, artifacts, eval_outputs
+        return clf, monitor, train_split, test_split, layout, artifacts, eval_outputs
 
     # Mode 3: eval + viz for existing experiment ,no training
     def run_eval_viz_only(
         self,
         config_path: str | Path,
         base_dir: str | Path | None = None,
+        course_folder: str = "./data/test_images",
     ) -> Path:
         """
         不重新训练：
@@ -95,8 +124,27 @@ class ExperimentPipeline:
         exp_dir = self._find_experiment_dir(exp_name, base_dir=base)
         print(f"\033[36m[Pipeline] Using experiment {exp_dir}\033[0m")
 
+        config_path = exp_dir / "config.json"
+        config = load_config(config_path)
         result_dir = exp_dir / "results"
+        clf_path = result_dir / "model.joblib"
         data = self._load_viz_data(result_dir)
+        clf = joblib.load(clf_path)
+        train_split = prep_training_data_from_config(config)
+        test_split = prep_testing_data_from_config(config, train_split, course_folder)
+
+        scores = self._run_eval(
+            clf=clf,
+            train_split=train_split,
+            test_split=test_split,
+            course_folder=course_folder,
+            result_dir=result_dir,
+        )
+
+        eval_outputs = EvalOutputs(
+            scores=scores,
+            score_path=Path(result_dir) / "scores.json",
+        )
 
         viz_dir = exp_dir / "visualization"
         viz_dir.mkdir(parents=True, exist_ok=True)
@@ -153,7 +201,7 @@ class ExperimentPipeline:
 
     def _load_viz_data(self, result_dir: Path) -> Any:
         try:
-            from adalab_viz.loader import load_from_joblib, load_from_csv
+            from adalab_viz.loader import load_from_joblib
         except Exception as e:
             raise ModuleNotFoundError(
                 "adalab_viz is required for visualization mode. "
@@ -161,16 +209,12 @@ class ExperimentPipeline:
             ) from e
 
         monitor_path = result_dir / "monitor.joblib"
-        csv_path = result_dir / "final_results.csv"
+        # csv_path = result_dir / "final_results.csv"
 
         if monitor_path.exists():
             return load_from_joblib(str(monitor_path))
-        if csv_path.exists():
-            return load_from_csv(str(csv_path))
 
-        raise FileNotFoundError(
-            f"Neither monitor.joblib nor final_results.csv found under: {result_dir}"
-        )
+        raise FileNotFoundError(f"No monitor.joblib : {result_dir}")
 
     def _visualize_data(self, data: Any, viz_dir: Path, experiment_name: str) -> None:
         from adalab_viz.plotter import visualize_training_data
@@ -249,51 +293,52 @@ class ExperimentPipeline:
         self,
         *,
         clf,
-        split,
+        train_split: DataSplitForTraining,
+        test_split: DataSplitForTesting,
         course_folder: str,
         result_dir: Path,
     ) -> dict:
-        """
-        Run evaluation on:
-        - MNIST test split
-        - course data
-
-        This method is intentionally lightweight:
-        - only requires a classifier with predict()
-        - minimal dependency on training artifacts
-
-        Returns:
-            scores (dict): structured evaluation results
-        """
-
-        from adalab.evaluation import evaluate
-
         # ---- prepare data ----
-        X_course, y_course = split.prep.prepare_course_data(course_folder)
+        X_course, y_course = test_split.X_course, test_split.y_course
 
         # ---- predictions ----
-        y_pred_mnist = clf.predict(split.X_test)
+        y_pred_mnist_ori = clf.predict(test_split.X_mnist_ori)
         y_pred_course = clf.predict(X_course)
 
-        # ---- evaluation ----
-        print("\033[36m[Pipeline] \n=== Scores on test data of MNIST ===\033[0m")
-        scores_on_mnist = evaluate(
-            y_true=split.y_test,
-            y_pred=y_pred_mnist,
+        # Evaluating on original MNIST data
+        print("\033[36m[Pipeline] \n=== Scores on original MNIST data ===\033[0m")
+        scores_on_mnist_ori = evaluate(
+            y_true=test_split.y_mnist,
+            y_pred=y_pred_mnist_ori,
         )
 
-        print("\033[36m[Pipeline] \n=== Scores on test data of course data ===\033[0m")
+        # ---- evaluate on shifted MNIST datasets ----
+        scores_on_mnist_shift = {}
+        for shift_name, X_shift in test_split.X_mnist_shift.items():
+            print(
+                f"\033[36m[Pipeline] \n=== Scores on MNIST with {shift_name} shift ===\033[0m"
+            )
+            y_pred_shift = clf.predict(X_shift)
+            scores_on_mnist_shift[shift_name] = evaluate(
+                y_true=test_split.y_mnist,
+                y_pred=y_pred_shift,
+            )
+
+        # ---- evaluate on course data ----
+        print("\033[36m[Pipeline] \n=== Scores on course data ===\033[0m")
         scores_on_course = evaluate(
             y_true=y_course,
             y_pred=y_pred_course,
         )
 
+        # ---- Combine all results ----
         scores = {
-            "mnist": scores_on_mnist,
+            "mnist_ori": scores_on_mnist_ori,
             "course_data": scores_on_course,
+            "mnist_shift": scores_on_mnist_shift,
         }
 
-        # ---- save ----
+        # ---- save results ----
         score_path = result_dir / "scores.json"
         score_path.write_text(
             json.dumps(scores, indent=4, ensure_ascii=False),
