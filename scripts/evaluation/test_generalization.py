@@ -3,16 +3,14 @@ Generalization Test: Train on standard MNIST, test on perturbed MNIST
 Test model robustness against visual perturbations
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from sklearn.ensemble import AdaBoostClassifier
+from sklearn.metrics import accuracy_score
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import accuracy_score, confusion_matrix
-import seaborn as sns
-from tqdm import tqdm
-
+from src.robust_adaboost import RobustAdaBoost
 from src.utils import DataPreparation
-from src.robust_adaboost import create_robust_adaboost, RobustAdaBoost
+from tqdm import tqdm
 
 
 class MNISTPerturber:
@@ -446,7 +444,7 @@ def print_summary(results_dict):
                 elif avg_acc2 > avg_acc1:
                     print(f"  ✓ {name2} performs better on perturbed data")
                 else:
-                    print(f"  = Both models perform similarly")
+                    print("  = Both models perform similarly")
     
     print("\n" + "=" * 60)
 

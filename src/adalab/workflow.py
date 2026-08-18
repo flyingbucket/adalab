@@ -13,31 +13,28 @@
 
 import json
 import os
-import joblib
-import time
-
-from typing import Optional, Union
-from dataclasses import dataclass
-from pathlib import Path
-
-import numpy as np
-from skimage import feature
-from sklearn.ensemble import AdaBoostClassifier
-from sklearn.tree import DecisionTreeClassifier
-
-from .monitor import BoostMonitor
-from .data import (
-    DataSplitForTraining,
-    DataSplitForTesting,
-    DataPreparationForTraining,
-    DataPreparationForTesting,
-)
-from .patch import AdaBoostClfWithMonitor
-from .evaluation import val_after_train_parallel
-from .io import dump_compressed
 
 # 兼容旧 joblib 路径
 import sys
+import time
+from dataclasses import dataclass
+from pathlib import Path
+
+import joblib
+import numpy as np
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.tree import DecisionTreeClassifier
+
+from .data import (
+    DataPreparationForTesting,
+    DataPreparationForTraining,
+    DataSplitForTesting,
+    DataSplitForTraining,
+)
+from .evaluation import val_after_train_parallel
+from .io import dump_compressed
+from .monitor import BoostMonitor
+from .patch import AdaBoostClfWithMonitor
 
 try:
     from adalab.monitor import BoostMonitor
@@ -116,9 +113,9 @@ class ArtifactPaths:
 
     raw_clf: Path
     compressed_clf: Path
-    raw_monitor: Optional[Path]
-    compressed_monitor: Optional[Path]
-    monitor_csv: Optional[Path]
+    raw_monitor: Path | None
+    compressed_monitor: Path | None
+    monitor_csv: Path | None
 
     @staticmethod
     def from_layout(layout: ExperimentPaths, has_monitor: bool) -> "ArtifactPaths":
@@ -352,8 +349,8 @@ def build_experiment(config_path):
 def train_and_save(
     config_path: str,
 ) -> tuple[
-    Union[AdaBoostClassifier, AdaBoostClfWithMonitor],
-    Optional[BoostMonitor],
+    AdaBoostClassifier | AdaBoostClfWithMonitor,
+    BoostMonitor | None,
     DataSplitForTraining,
     ExperimentPaths,
     ArtifactPaths,

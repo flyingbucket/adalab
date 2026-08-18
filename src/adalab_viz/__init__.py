@@ -2,8 +2,8 @@ from .cli import main
 
 try:
     import matplotlib
-    import seaborn
     import mplfonts
+    import seaborn
 except ImportError:
     raise ImportError(
         "adalab_viz requires visualization dependencies.\n"

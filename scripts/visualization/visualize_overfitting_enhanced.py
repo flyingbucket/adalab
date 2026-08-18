@@ -3,14 +3,14 @@
 结合 BoostMonitor 提供更深入的训练动态分析
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import AdaBoostClassifier
-from src.utils import prepare_data
 from src.evaluation import visualize_overfitting_process
-from src.monitor import BoostMonitor
 from src.patch import AdaBoostClfWithMonitor
+from src.utils import prepare_data
+
+from src.monitor import BoostMonitor
 
 
 def visualize_detailed_training(monitor, n_estimators, save_path=None):
@@ -243,7 +243,7 @@ def main():
     best_n = results["n_estimators"][best_idx]
     best_test_acc = results["test_accuracy"][best_idx]
     
-    print(f"\n✓ Best Configuration Found:")
+    print("\n✓ Best Configuration Found:")
     print(f"   - Number of Estimators: {best_n}")
     print(f"   - Test Accuracy: {best_test_acc:.4f}")
     
@@ -299,7 +299,7 @@ def main():
     
     final_overfit = results["overfitting_degree"][best_idx]
     
-    print(f"\n📊 Model Performance:")
+    print("\n📊 Model Performance:")
     print(f"   - Train Accuracy: {results['train_accuracy'][best_idx]:.4f}")
     print(f"   - Test Accuracy:  {results['test_accuracy'][best_idx]:.4f}")
     print(f"   - Overfitting:    {final_overfit:.4f} ({final_overfit*100:.2f}%)")
@@ -307,21 +307,21 @@ def main():
     # 根据结果给出建议
     if final_overfit > 0.15:
         print("\n⚠️  Severe Overfitting Detected:")
-        print(f"   - Consider reducing estimators")
-        print(f"   - Try lower learning rate (e.g., 0.1)")
-        print(f"   - Apply regularization techniques")
+        print("   - Consider reducing estimators")
+        print("   - Try lower learning rate (e.g., 0.1)")
+        print("   - Apply regularization techniques")
     elif final_overfit > 0.10:
         print("\n⚠️  Moderate Overfitting:")
-        print(f"   - Current configuration is acceptable")
+        print("   - Current configuration is acceptable")
         print(f"   - Early stopping at n={best_n} recommended")
     else:
         print("\n✓ Good Model Fit:")
-        print(f"   - Low overfitting degree")
-        print(f"   - Model generalizes well")
+        print("   - Low overfitting degree")
+        print("   - Model generalizes well")
     
     # 噪声相关建议
     if is_data_noisy:
-        print(f"\n💡 Noise-Specific Insights:")
+        print("\n💡 Noise-Specific Insights:")
         
         if len(monitor.noisy_weight_history) > 0:
             final_noisy_weight = monitor.noisy_weight_history[-1]
@@ -333,21 +333,21 @@ def main():
             print(f"   - Weight ratio (noisy/clean): {weight_ratio:.3f}")
             
             if weight_ratio > 1.5:
-                print(f"\n   ⚠️  Noisy samples are over-weighted!")
-                print(f"   - This indicates noise sensitivity")
-                print(f"   - Consider robust AdaBoost methods")
+                print("\n   ⚠️  Noisy samples are over-weighted!")
+                print("   - This indicates noise sensitivity")
+                print("   - Consider robust AdaBoost methods")
     
     # Alpha 系数分析
     if len(monitor.alpha_history) > 0:
         avg_alpha = np.mean(monitor.alpha_history)
         std_alpha = np.std(monitor.alpha_history)
-        print(f"\n📈 Weak Learner Analysis:")
+        print("\n📈 Weak Learner Analysis:")
         print(f"   - Average alpha: {avg_alpha:.3f}")
         print(f"   - Std of alpha:  {std_alpha:.3f}")
         
         if std_alpha / avg_alpha > 0.5:
-            print(f"   - High variance in learner weights")
-            print(f"   - Some learners much stronger than others")
+            print("   - High variance in learner weights")
+            print("   - Some learners much stronger than others")
     
     print("\n" + "=" * 60)
     print("\n✓ Visualization Complete!")

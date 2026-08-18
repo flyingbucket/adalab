@@ -1,4 +1,4 @@
-from src.utils import train_and_save, load_compressed
+from src.utils import train_and_save
 
 if __name__ == "__main__":
     (

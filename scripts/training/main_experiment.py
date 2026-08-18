@@ -3,15 +3,14 @@ import os
 import numpy as np
 from sklearn.datasets import fetch_openml
 from sklearn.ensemble import AdaBoostClassifier
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import (
     accuracy_score,
+    confusion_matrix,
+    f1_score,
     precision_score,
     recall_score,
-    f1_score,
-    confusion_matrix,
 )
-
+from sklearn.tree import DecisionTreeClassifier
 from src.utils import preprocess_for_mnist
 
 

@@ -1,6 +1,8 @@
 import unittest
-import numpy as np
 from unittest.mock import MagicMock
+
+import numpy as np
+
 from adalab.data import DataPreparationForTesting, DataSplitForTesting
 
 

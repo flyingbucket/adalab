@@ -10,30 +10,27 @@
 """
 
 from __future__ import annotations
-from joblib import Parallel, delayed
-import numpy as np
 
+from typing import Any
+
+import numpy as np
+from joblib import Parallel, delayed
 from sklearn.metrics import (
     accuracy_score,
-    precision_score,
-    recall_score,
+    classification_report,
     f1_score,
 )
-
-
-from typing import Any, Dict, Optional
-from sklearn.metrics import classification_report, accuracy_score
 
 
 def evaluate(
     y_true,
     y_pred,
     *,
-    labels: Optional[list[int]] = None,
-    target_names: Optional[list[str]] = None,
-    title: Optional[str] = None,
+    labels: list[int] | None = None,
+    target_names: list[str] | None = None,
+    title: str | None = None,
     zero_division: int = 0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Basic evaluation for multi-class classification.
 
@@ -60,7 +57,7 @@ def evaluate(
     accuracy = accuracy_score(y_true, y_pred)
 
     # ---- extract per-class recall ----
-    per_class_recall: Dict[str, float] = {}
+    per_class_recall: dict[str, float] = {}
 
     for key, value in report.items():
         # skip aggregate entries

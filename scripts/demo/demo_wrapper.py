@@ -1,4 +1,4 @@
-from src.utils import train_and_save, load_compressed
+from src.utils import load_compressed, train_and_save
 
 if __name__ == "__main__":
     # === 用包装函数训练并保存 ===

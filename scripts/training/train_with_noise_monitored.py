@@ -1,12 +1,9 @@
-from sklearn.ensemble import AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier
-
-from src import monitor
-from src.monitor import BoostMonitor
+from src.evaluation import quick_evaluate
 from src.patch import AdaBoostClfWithMonitor
 from src.utils import prepare_data
-from src.evaluation import quick_evaluate, visualize_overfitting_process
 
+from src.monitor import BoostMonitor
 
 if __name__ == "__main__":
     # 获取含噪声的数据（默认噪声比例5%）

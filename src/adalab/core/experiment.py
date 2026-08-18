@@ -1,37 +1,36 @@
 from __future__ import annotations
 
-import re
-import json
 import datetime as dt
+import json
+import re
 import warnings
-import joblib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Union, Tuple
+from typing import Any
 
+import joblib
 from sklearn.ensemble import AdaBoostClassifier
-from sklearn.model_selection import train_test_split
 
+from adalab.data import (
+    DataSplitForTesting,
+    DataSplitForTraining,
+)
+from adalab.evaluation import evaluate
 from adalab.monitor import BoostMonitor
 from adalab.patch import AdaBoostClfWithMonitor
 from adalab.workflow import (
     ArtifactPaths,
     ExperimentPaths,
     load_config,
-    train_and_save,
-    prep_training_data_from_config,
     prep_testing_data_from_config,
-)
-from adalab.evaluation import evaluate
-from adalab.data import (
-    DataSplitForTesting,
-    DataSplitForTraining,
+    prep_training_data_from_config,
+    train_and_save,
 )
 
 
 @dataclass(frozen=True)
 class EvalOutputs:
-    scores: Dict[str, Any]
+    scores: dict[str, Any]
     score_path: Path
 
 
@@ -50,9 +49,9 @@ class ExperimentPipeline:
         config_path: str | Path,
         course_folder: str = "./data/test_images",
         do_viz: bool = False,
-    ) -> Tuple[
-        Union[AdaBoostClassifier, AdaBoostClfWithMonitor],
-        Union[BoostMonitor, None],
+    ) -> tuple[
+        AdaBoostClassifier | AdaBoostClfWithMonitor,
+        BoostMonitor | None,
         DataSplitForTraining,
         DataSplitForTesting,
         ExperimentPaths,
@@ -249,7 +248,7 @@ class ExperimentPipeline:
         return dt.datetime.fromtimestamp(p.stat().st_mtime)
 
     def _find_experiment_dir(self, exp_name: str, base_dir: Path) -> Path:
-        candidates: List[Path] = []
+        candidates: list[Path] = []
 
         exact = base_dir / exp_name
         if exact.exists() and exact.is_dir():

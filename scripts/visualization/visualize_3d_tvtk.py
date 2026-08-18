@@ -312,7 +312,6 @@ def create_custom_visualization():
         return
     
     from mayavi import mlab
-    from tvtk.api import tvtk
     
     print("\n创建自定义TVTK可视化...")
     

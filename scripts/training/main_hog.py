@@ -12,16 +12,15 @@
     python scripts/training/main_hog.py --config_path configs/hog_config.json
 """
 
+import argparse
 import os
 import sys
-import argparse
 
 # 添加项目根目录到路径
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
 sys.path.insert(0, project_root)
 
 from src.adalab.core.trainer import TrainingPipeline
-
 
 if __name__ == "__main__":
     print("⚠️  警告: 此脚本已废弃，建议使用根目录的 main.py")

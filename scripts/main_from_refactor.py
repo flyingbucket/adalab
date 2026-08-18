@@ -1,14 +1,12 @@
 from __future__ import annotations
-import json
 
-from typing import List
 import datetime as dt
-from pathlib import Path
+import json
 from argparse import ArgumentParser
+from pathlib import Path
 
-from adalab.workflow import train_and_save
-from adalab.data import DataPreparation
 from adalab.evaluation import evaluate
+from adalab.workflow import train_and_save
 
 
 def get_args():
@@ -120,7 +118,7 @@ def _find_experiment_dir(
     - 也包含 experiments/<exp_name>_*（时间戳目录）
     - 按 mtime 从新到旧排序展示
     """
-    candidates: List[Path] = []
+    candidates: list[Path] = []
 
     exact = base_dir / exp_name
     if exact.exists() and exact.is_dir():
@@ -179,7 +177,7 @@ def run_viz_only(config_path: str, base_dir: str = "experiments"):
     result_dir = exp_dir / "results"
 
     # 延迟导入,避免没装 adalab[viz] import 直接报错
-    from adalab_viz.loader import load_from_joblib, load_from_csv
+    from adalab_viz.loader import load_from_csv, load_from_joblib
     from adalab_viz.plotter import visualize_training_data
     from adalab_viz.summary import print_summary
 

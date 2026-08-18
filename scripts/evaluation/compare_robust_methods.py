@@ -3,17 +3,16 @@
 清楚展示改进效果
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib
-from mplfonts.bin.cli import init
-from sklearn.ensemble import AdaBoostClassifier
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import accuracy_score
 import time
 
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.tree import DecisionTreeClassifier
+from src.robust_adaboost import create_robust_adaboost
 from src.utils import prepare_data
-from src.robust_adaboost import RobustAdaBoost, create_robust_adaboost
 
 # 初始化字体
 # init()  # 如需中文支持可取消注释
@@ -251,15 +250,15 @@ def print_summary(results):
     best_test = max(results, key=lambda x: x["test_acc"])
     best_overfit = min(results, key=lambda x: x["overfit"])
 
-    print(f"\n🏆 最佳测试准确率:")
+    print("\n🏆 最佳测试准确率:")
     print(f"   {best_test['name']}: {best_test['test_acc']:.4f}")
 
-    print(f"\n✓ 最小过拟合:")
+    print("\n✓ 最小过拟合:")
     print(f"   {best_overfit['name']}: {best_overfit['overfit']:.4f}")
 
     if "noise_gap" in results[0]:
         best_noise = min(results, key=lambda x: x["noise_gap"])
-        print(f"\n💡 最佳噪声鲁棒性:")
+        print("\n💡 最佳噪声鲁棒性:")
         print(
             f"   {best_noise['name']}: 噪声差距 = {best_noise['noise_gap']:.4f}"
         )
@@ -267,7 +266,7 @@ def print_summary(results):
     # 改进幅度
     standard = next((r for r in results if "标准" in r["name"]), None)
     if standard:
-        print(f"\n📈 相比标准AdaBoost的改进:")
+        print("\n📈 相比标准AdaBoost的改进:")
         for result in results:
             if result["name"] == standard["name"]:
                 continue
@@ -302,7 +301,7 @@ def main():
         noise_ratio=noise_ratio
     )
 
-    print(f"数据集: MNIST")
+    print("数据集: MNIST")
     print(f"噪声比例: {noise_ratio*100:.0f}%")
     print(f"训练集: {len(X_train)} 样本")
     print(f"测试集: {len(X_test)} 样本")
@@ -366,19 +365,19 @@ def main():
         print(f"   ⚠️ 可以使用: {best_result['name']}")
         print(f"      - 测试准确率: {best_result['test_acc']:.4f}")
         print(f"      - 过拟合程度中等: {best_result['overfit']:.4f}")
-        print(f"      - 建议进一步调整参数")
+        print("      - 建议进一步调整参数")
     else:
         print(f"   ⚠️ {best_result['name']} 仍有明显过拟合")
-        print(f"      - 建议使用'激进裁剪'或'保守'配置")
-        print(f"      - 或降低学习率到 0.1-0.3")
+        print("      - 建议使用'激进裁剪'或'保守'配置")
+        print("      - 或降低学习率到 0.1-0.3")
 
     if noise_ratio > 0:
-        print(f"\n   💡 噪声数据建议:")
+        print("\n   💡 噪声数据建议:")
         print(f"      - 当前噪声: {noise_ratio*100:.0f}%")
         if noise_ratio >= 0.1:
-            print(f"      - 推荐使用: '鲁棒-激进裁剪' 或 '保守' 配置")
+            print("      - 推荐使用: '鲁棒-激进裁剪' 或 '保守' 配置")
         else:
-            print(f"      - 推荐使用: '鲁棒-平衡' 配置")
+            print("      - 推荐使用: '鲁棒-平衡' 配置")
 
     print("\n" + "=" * 60)
     print("\n✓ 对比实验完成！")

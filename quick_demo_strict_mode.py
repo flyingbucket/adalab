@@ -3,14 +3,15 @@
 用于测试严格模式的可视化功能
 """
 import os
+
 import joblib
 import numpy as np
 from sklearn.ensemble import AdaBoostClassifier
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, f1_score
+from sklearn.tree import DecisionTreeClassifier
 from src.utils import DataPreparation
+
 from src.monitor import BoostMonitor
-from src.patch import boost_with_monitor
 
 print("=" * 60)
 print("快速演示：生成包含 val_idx 的监控数据".center(60))
@@ -35,7 +36,7 @@ monitor = BoostMonitor(
     clean_indices=train_clean_indices,
     is_data_noisy=False
 )
-print(f"✓ BoostMonitor 初始化完成")
+print("✓ BoostMonitor 初始化完成")
 print(f"✓ val_idx 字段存在: {hasattr(monitor, 'val_idx')}")
 
 # 3. 训练模型并模拟监控数据
@@ -115,7 +116,7 @@ print(f"✓ 已保存到: {joblib_path}")
 # 验证保存的数据
 print("\n🔍 验证保存的数据...")
 loaded_monitor = joblib.load(joblib_path)
-print(f"✓ 加载成功")
+print("✓ 加载成功")
 print(f"✓ val_idx 存在: {hasattr(loaded_monitor, 'val_idx')}")
 print(f"✓ val_idx 长度: {len(loaded_monitor.val_idx)}")
 print(f"✓ val_acc_history 长度: {len(loaded_monitor.val_acc_history)}")
@@ -125,7 +126,7 @@ print("\n" + "=" * 60)
 print("✅ 演示数据生成完成！")
 print("=" * 60)
 print("\n现在可以运行可视化：")
-print(f"python scripts/visualization/visualize_from_results.py \\")
+print("python scripts/visualization/visualize_from_results.py \\")
 print(f"    --joblib {joblib_path}")
 print("=" * 60)
 

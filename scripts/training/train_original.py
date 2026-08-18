@@ -1,12 +1,7 @@
-import numpy as np
-from sklearn.datasets import fetch_openml
 from sklearn.ensemble import AdaBoostClassifier
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score
-from sklearn.model_selection import train_test_split
-
+from sklearn.tree import DecisionTreeClassifier
 from src.utils import prepare_data
-
 
 if __name__ == "__main__":
     # get original clean data

@@ -11,18 +11,18 @@ MNIST 数据准备、噪声注入与特征提取。
 """
 
 from __future__ import annotations
+
 import os
 import warnings
-from typing import Any, Dict, Tuple, Optional
 from dataclasses import dataclass
+from typing import Any
 
-import numpy as np
 import cv2
-from scipy.ndimage import shift
+import numpy as np
+from numpy.typing import NDArray
+from skimage.feature import hog
 from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
-from skimage.feature import hog
-from numpy.typing import NDArray
 
 FloatArray = NDArray[np.floating]
 IntArray = NDArray[np.integer]
@@ -58,7 +58,7 @@ class DataSplitForTraining:
 @dataclass
 class DataSplitForTesting:
     X_mnist_ori: NDArray
-    X_mnist_shift: Dict[str, NDArray]
+    X_mnist_shift: dict[str, NDArray]
     X_course: NDArray
     y_mnist: NDArray
     y_course: NDArray
@@ -134,7 +134,7 @@ class FeatureExtractor:
         self.use_feature = use_feature
         self.feature_config = feature_config
 
-    def extract_hog(self, X, hog_conf: Dict):
+    def extract_hog(self, X, hog_conf: dict):
         """从输入图像中提取 HOG 特征。
 
         Args:
@@ -232,11 +232,11 @@ class DataPreparationForTraining:
 
     def __init__(
         self,
-        noise_config: Optional[Dict[str, Any]] = None,
+        noise_config: dict[str, Any] | None = None,
         test_size=0.2,
         use_feature="original",
         random_state=42,
-        feature_config: Optional[Dict[str, Any]] = None,
+        feature_config: dict[str, Any] | None = None,
     ):
         """初始化数据准备器。
 
@@ -392,7 +392,7 @@ class DataPreparationForTraining:
 
     def prepare(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         np.ndarray,
         np.ndarray,
@@ -447,7 +447,7 @@ class DataPreparationForTesting:
         self.train_split = train_split
         self.pert = MNISTPerturber(random_state)
 
-    def apply_shift(self, X: NDArray, config: Dict) -> NDArray:
+    def apply_shift(self, X: NDArray, config: dict) -> NDArray:
         X_shift = X.copy()
         for shift_type, params in config.items():
             if shift_type == "contrast":
@@ -463,7 +463,7 @@ class DataPreparationForTesting:
                 X_shift = self.pert.rotate_slight(X_shift, angle_range=ar)
         return X_shift
 
-    def get_shift_x_test(self) -> Dict[str, NDArray]:
+    def get_shift_x_test(self) -> dict[str, NDArray]:
         shift_tests = {}
         feat_extractor = FeatureExtractor(self.use_feature, self.feature_config)
         # X = feat_extractor.apply_feature(X_raw)

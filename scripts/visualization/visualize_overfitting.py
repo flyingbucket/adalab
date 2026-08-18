@@ -5,14 +5,14 @@
 可选功能：启用详细训练监控（参考 docs/monitor.md）
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import AdaBoostClassifier
-from src.utils import prepare_data
 from src.evaluation import visualize_overfitting_process
-from src.monitor import BoostMonitor
 from src.patch import AdaBoostClfWithMonitor
+from src.utils import prepare_data
+
+from src.monitor import BoostMonitor
 
 
 def visualize_monitor_data(monitor, n_estimators, is_noisy):
@@ -246,7 +246,7 @@ def main():
         print("\n⚠️  严重过拟合警告:")
         print(f"   - 当前过拟合程度: {final_overfit:.2%}")
         print(f"   - 建议减少弱学习器数量至 {best_n} 左右")
-        print(f"   - 或使用更小的学习率（如 0.1）")
+        print("   - 或使用更小的学习率（如 0.1）")
     elif final_overfit > 0.10:
         print("\n⚠️  中度过拟合:")
         print(f"   - 当前过拟合程度: {final_overfit:.2%}")
@@ -254,7 +254,7 @@ def main():
     elif final_overfit < 0.05:
         print("\n✓ 模型拟合良好:")
         print(f"   - 过拟合程度低: {final_overfit:.2%}")
-        print(f"   - 可以考虑增加弱学习器数量以提升性能")
+        print("   - 可以考虑增加弱学习器数量以提升性能")
     else:
         print("\n✓ 模型表现良好:")
         print(f"   - 过拟合程度: {final_overfit:.2%} (可接受)")
@@ -262,13 +262,13 @@ def main():
 
     # 噪声数据的额外建议
     if noise_ratio > 0:
-        print(f"\n💡 噪声数据建议:")
+        print("\n💡 噪声数据建议:")
         print(f"   - 当前数据有 {noise_ratio*100:.0f}% 噪声")
-        print(f"   - AdaBoost 对噪声敏感，容易过拟合")
-        print(f"   - 建议:")
+        print("   - AdaBoost 对噪声敏感，容易过拟合")
+        print("   - 建议:")
         print(f"     1. 使用较少的弱学习器（{best_n} 左右）")
-        print(f"     2. 降低学习率（从 0.5 到 0.3）")
-        print(f"     3. 考虑数据清洗或噪声鲁棒方法")
+        print("     2. 降低学习率（从 0.5 到 0.3）")
+        print("     3. 考虑数据清洗或噪声鲁棒方法")
 
     # ========== 6. 可选：详细训练监控 ==========
     # 取消下面的注释来启用详细监控可视化
@@ -315,7 +315,7 @@ def main():
     print("   - 图表会自动显示（关闭窗口继续）")
     print("   - 要保存图表，设置 save_path='overfitting.png'")
     print("   - 要测试不同配置，修改脚本中的 config 字典")
-    print(f"   - 要启用详细监控，设置 enable_detailed_monitoring=True")
+    print("   - 要启用详细监控，设置 enable_detailed_monitoring=True")
     print("=" * 60)
 
 

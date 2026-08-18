@@ -1,7 +1,9 @@
 import unittest
+
 import numpy as np
-from adalab.workflow import load_compressed, load_config, prep_data_from_config
+
 from adalab.evaluation import val_after_train, val_after_train_parallel
+from adalab.workflow import load_compressed, load_config, prep_data_from_config
 
 
 class TestValAfterTrain(unittest.TestCase):

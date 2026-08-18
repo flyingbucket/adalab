@@ -1,14 +1,10 @@
-import numpy as np
-from sklearn.datasets import fetch_openml
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import accuracy_score
-from sklearn.model_selection import train_test_split
-
-from src.monitor import BoostMonitor
+from src.evaluation import quick_evaluate
 from src.patch import boost_with_monitor
 from src.utils import prepare_data
-from src.evaluation import quick_evaluate, visualize_overfitting_process
+
+from src.monitor import BoostMonitor
 
 # 替换 AdaBoostClassifier._boost
 AdaBoostClassifier._boost = boost_with_monitor

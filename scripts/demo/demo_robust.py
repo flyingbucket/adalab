@@ -5,8 +5,8 @@
 
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier
-from src.utils import prepare_data
 from src.robust_adaboost import create_robust_adaboost
+from src.utils import prepare_data
 
 
 def quick_demo():
@@ -70,7 +70,7 @@ def quick_demo():
     test_acc_rob = clf_robust.score(X_test, y_test)
     overfit_rob = train_acc_rob - test_acc_rob
     
-    print(f"\n结果:")
+    print("\n结果:")
     print(f"训练集准确率: {train_acc_rob:.4f} ({train_acc_rob*100:.2f}%)")
     print(f"测试集准确率: {test_acc_rob:.4f} ({test_acc_rob*100:.2f}%)")
     print(f"过拟合程度: {overfit_rob:.4f} ({overfit_rob*100:.2f}%)")
@@ -94,7 +94,7 @@ def quick_demo():
     overfit_improve = overfit_std - overfit_rob
     noise_gap_improve = (clean_acc_std - noise_acc_std) - (clean_acc_rob - noise_acc_rob)
     
-    print(f"\n相比标准AdaBoost:")
+    print("\n相比标准AdaBoost:")
     print(f"  测试准确率提升: {test_improve:+.4f} ({test_improve*100:+.2f}%)")
     print(f"  过拟合减少: {overfit_improve:+.4f} ({overfit_improve*100:+.2f}%)")
     print(f"  噪声差距缩小: {noise_gap_improve:+.4f} ({noise_gap_improve*100:+.2f}%)")
@@ -113,10 +113,10 @@ def quick_demo():
     if noise_gap_improve > 0:
         print("✅ 噪声鲁棒性提升")
     
-    print(f"\n💡 推荐:")
-    print(f"   - 对于含噪声数据，使用鲁棒AdaBoost")
+    print("\n💡 推荐:")
+    print("   - 对于含噪声数据，使用鲁棒AdaBoost")
     print(f"   - 自动早停找到最佳弱学习器数量 (n={clf_robust.best_n_estimators_})")
-    print(f"   - 权重裁剪防止噪声样本权重爆炸")
+    print("   - 权重裁剪防止噪声样本权重爆炸")
     
     print("\n" + "=" * 60)
     print("\n✓ 演示完成！")

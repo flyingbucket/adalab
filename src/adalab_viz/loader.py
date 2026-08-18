@@ -1,13 +1,13 @@
 import os
-import pandas as pd
-import joblib
-from typing import Union
-
-from adalab.monitor import BoostMonitor
 
 # 兼容旧 joblib 路径
 import sys
 import warnings
+
+import joblib
+import pandas as pd
+
+from adalab.monitor import BoostMonitor
 
 
 def _patch_legacy_monitor_path():
@@ -76,7 +76,7 @@ def load_from_csv(csv_path):
         "n_estimators": len(df),
     }
 
-    print(f"[Viz] Data fields available:")
+    print("[Viz] Data fields available:")
     for key, value in data.items():
         if key not in ["rounds", "is_data_noisy", "n_estimators"]:
             status = "✓" if (isinstance(value, list) and len(value) > 0) else "✗"
@@ -85,7 +85,7 @@ def load_from_csv(csv_path):
     return data
 
 
-def load_from_joblib(monitor: Union[str, BoostMonitor]):
+def load_from_joblib(monitor: str | BoostMonitor):
     """
     从 BoostMonitor对象或joblib 文件加载 monitor实例中的数据
 

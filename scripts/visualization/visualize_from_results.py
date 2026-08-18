@@ -8,12 +8,13 @@
     python visualize_from_results.py --joblib experiments/train_val_500rounds/results/monitor.joblib
 """
 
-import os
 import argparse
-import pandas as pd
+import os
+
 import joblib
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 
 
 def load_from_csv(csv_path):
@@ -64,7 +65,7 @@ def load_from_csv(csv_path):
         'n_estimators': len(df),
     }
     
-    print(f"✓ Data fields available:")
+    print("✓ Data fields available:")
     for key, value in data.items():
         if key not in ['rounds', 'is_data_noisy', 'n_estimators']:
             status = "✓" if (isinstance(value, list) and len(value) > 0) else "✗"
@@ -93,7 +94,7 @@ def load_from_joblib(joblib_path):
         raise FileNotFoundError(f"Joblib file not found: {joblib_path}")
     
     monitor = joblib.load(joblib_path)
-    print(f"✓ Loaded BoostMonitor object")
+    print("✓ Loaded BoostMonitor object")
     
     # 从 BoostMonitor 对象提取数据
     # ❌ 严格模式：必须有 val_idx 字段
@@ -334,7 +335,7 @@ def print_summary(data):
     print("Training Summary".center(60))
     print("=" * 60)
     
-    print(f"\n📊 Basic Info:")
+    print("\n📊 Basic Info:")
     print(f"   - Total Rounds: {data['n_estimators']}")
     print(f"   - Data Type: {'Noisy' if data['is_data_noisy'] else 'Clean'}")
     
@@ -345,9 +346,9 @@ def print_summary(data):
             print(f"   - Val Rounds: {data['val_idx']}")
     elif len(data['val_acc_history']) > 0:
         # ❌ 这不应该发生（严格模式下已经在加载时报错）
-        print(f"   - Validation Mode: val-every-round")
+        print("   - Validation Mode: val-every-round")
     
-    print(f"\n📈 Final Metrics:")
+    print("\n📈 Final Metrics:")
     if len(data['val_acc_history']) > 0:
         print(f"   - Final Val Accuracy: {data['val_acc_history'][-1]:.4f}")
         print(f"   - Best Val Accuracy:  {max(data['val_acc_history']):.4f} (round {data['val_acc_history'].index(max(data['val_acc_history']))+1})")
@@ -356,12 +357,12 @@ def print_summary(data):
         print(f"   - Final Val F1: {data['val_f1_history'][-1]:.4f}")
         print(f"   - Best Val F1:  {max(data['val_f1_history']):.4f} (round {data['val_f1_history'].index(max(data['val_f1_history']))+1})")
     
-    print(f"\n🔍 Error Analysis:")
+    print("\n🔍 Error Analysis:")
     print(f"   - Initial Error: {data['error_history'][0]:.4f}")
     print(f"   - Final Error:   {data['error_history'][-1]:.4f}")
     print(f"   - Min Error:     {min(data['error_history']):.4f}")
     
-    print(f"\n⚖️ Alpha Analysis:")
+    print("\n⚖️ Alpha Analysis:")
     alphas = data['alpha_history']
     print(f"   - Mean Alpha: {np.mean(alphas):.3f}")
     print(f"   - Std Alpha:  {np.std(alphas):.3f}")
@@ -369,7 +370,7 @@ def print_summary(data):
     print(f"   - Min Alpha:  {min(alphas):.3f} (round {alphas.index(min(alphas))+1})")
     
     if data['is_data_noisy'] and len(data['noisy_weight_history']) > 0:
-        print(f"\n💡 Noise Analysis:")
+        print("\n💡 Noise Analysis:")
         final_noisy = data['noisy_weight_history'][-1]
         final_clean = data['clean_weight_history'][-1]
         ratio = final_noisy / final_clean if final_clean > 0 else 0
@@ -380,11 +381,11 @@ def print_summary(data):
         print(f"   - Weight Ratio (noisy/clean): {ratio:.3f}")
         
         if ratio > 1.5:
-            print(f"   ⚠️  Noisy samples are over-weighted!")
+            print("   ⚠️  Noisy samples are over-weighted!")
         elif ratio > 1.0:
-            print(f"   ⚠️  Noisy samples slightly over-weighted")
+            print("   ⚠️  Noisy samples slightly over-weighted")
         else:
-            print(f"   ✓  Weight distribution reasonable")
+            print("   ✓  Weight distribution reasonable")
     
     print("=" * 60)
 

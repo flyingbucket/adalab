@@ -3,9 +3,8 @@
 展示Matplotlib vs TVTK/Mayavi的适用场景
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
 from sklearn.decomposition import PCA
 from src.utils import prepare_data
 
@@ -82,7 +81,7 @@ def demo_matplotlib_3d():
     
     plt.tight_layout()
     plt.savefig('results/matplotlib_3d_demo.png', dpi=150, bbox_inches='tight')
-    print(f"图表已保存到: results/matplotlib_3d_demo.png")
+    print("图表已保存到: results/matplotlib_3d_demo.png")
     plt.show()
     
     print("\n优点:")

@@ -1,7 +1,8 @@
 import os
-import numpy as np
+
 import cv2
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def inspect_images(folder="test_data"):

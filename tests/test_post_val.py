@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.metrics import accuracy_score
+
 from adalab.workflow import load_compressed, load_config, prep_data_from_config
 
 
