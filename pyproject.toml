@@ -17,6 +17,7 @@ dependencies = [
   "scikit-image>=0.23.0",
   "opencv-python>=4.3.0",
   "tqdm",
+  "pip>=26.2.1",
 ]
 
 license = { file = "LICENSE" }
