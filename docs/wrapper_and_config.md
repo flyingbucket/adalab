@@ -41,11 +41,11 @@
 
 ```python
 (
-    clf,        # 训练好的 AdaBoostClassifier / AdaBoostClfWithMonitor
-    monitor,    # BoostMonitor 对象（如果启用）否则 None
-    prep,       # DataPreparation 对象（包含噪声设置、特征方式等）
-    data,       # (X_train, X_test, y_train, y_test, noise_idx, clean_idx)
-    paths       # 输出文件路径字典
+    clf,  # 训练好的 AdaBoostClassifier / AdaBoostClfWithMonitor
+    monitor,  # BoostMonitor 对象（如果启用）否则 None
+    prep,  # DataPreparation 对象（包含噪声设置、特征方式等）
+    data,  # (X_train, X_test, y_train, y_test, noise_idx, clean_idx)
+    paths,  # 输出文件路径字典
 )
 ```
 
@@ -197,10 +197,7 @@
 
 ```python
 DecisionTreeClassifier(
-    max_depth=2,
-    criterion="entropy",
-    max_features=0.25,
-    random_state=42
+    max_depth=2, criterion="entropy", max_features=0.25, random_state=42
 )
 ```
 

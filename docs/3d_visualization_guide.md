@@ -89,7 +89,7 @@ digit = X_train[idx].reshape(28, 28)
 
 # 创建3D高度图
 x, y = np.mgrid[0:28, 0:28]
-mlab.surf(x, y, digit, colormap='viridis')
+mlab.surf(x, y, digit, colormap="viridis")
 mlab.show()
 ```
 
@@ -122,12 +122,13 @@ pca = PCA(n_components=3)
 X_3d = pca.fit_transform(X_train[:1000])
 
 # 为每个类别绘制点
-colors = [(1,0,0), (0,1,0), (0,0,1), ...]
+colors = [(1, 0, 0), (0, 1, 0), (0, 0, 1), ...]
 for digit in range(10):
     mask = y_train[:1000] == digit
     points = X_3d[mask]
-    mlab.points3d(points[:,0], points[:,1], points[:,2],
-                  color=colors[digit], scale_factor=2)
+    mlab.points3d(
+        points[:, 0], points[:, 1], points[:, 2], color=colors[digit], scale_factor=2
+    )
 
 mlab.show()
 ```
@@ -147,10 +148,10 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
+ax = fig.add_subplot(111, projection="3d")
 for digit in range(10):
     mask = y_train[:1000] == digit
-    ax.scatter(X_3d[mask,0], X_3d[mask,1], X_3d[mask,2], label=str(digit))
+    ax.scatter(X_3d[mask, 0], X_3d[mask, 1], X_3d[mask, 2], label=str(digit))
 plt.legend()
 plt.show()
 ```
@@ -179,10 +180,10 @@ y = np.arange(n_rounds)
 X, Y = np.meshgrid(x, y)
 Z = np.array(weight_history)
 
-mlab.surf(X, Y, Z, colormap='hot')
-mlab.xlabel('样本索引')
-mlab.ylabel('训练轮次')
-mlab.zlabel('权重值')
+mlab.surf(X, Y, Z, colormap="hot")
+mlab.xlabel("样本索引")
+mlab.ylabel("训练轮次")
+mlab.zlabel("权重值")
 mlab.show()
 ```
 
@@ -200,10 +201,10 @@ mlab.show()
 import matplotlib.pyplot as plt
 
 # 2D热力图
-plt.imshow(weight_history, aspect='auto', cmap='hot')
-plt.xlabel('样本索引')
-plt.ylabel('训练轮次')
-plt.colorbar(label='权重')
+plt.imshow(weight_history, aspect="auto", cmap="hot")
+plt.xlabel("样本索引")
+plt.ylabel("训练轮次")
+plt.colorbar(label="权重")
 plt.show()
 ```
 
@@ -288,11 +289,17 @@ pip install plotly
 import plotly.graph_objects as go
 
 # 3D散点图（比Mayavi更轻量）
-fig = go.Figure(data=[go.Scatter3d(
-    x=X_3d[:,0], y=X_3d[:,1], z=X_3d[:,2],
-    mode='markers',
-    marker=dict(size=2, color=y_train[:1000])
-)])
+fig = go.Figure(
+    data=[
+        go.Scatter3d(
+            x=X_3d[:, 0],
+            y=X_3d[:, 1],
+            z=X_3d[:, 2],
+            mode="markers",
+            marker=dict(size=2, color=y_train[:1000]),
+        )
+    ]
+)
 fig.show()  # 在浏览器中打开，可交互
 ```
 

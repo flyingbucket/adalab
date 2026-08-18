@@ -54,7 +54,7 @@ def record_validation(self, iboost, acc, f1):
 # 第99行
 data = {
     # ... 其他字段
-    'val_idx': monitor.val_idx if hasattr(monitor, 'val_idx') else [],  # ✅
+    "val_idx": monitor.val_idx if hasattr(monitor, "val_idx") else [],  # ✅
     # ...
 }
 ```
@@ -68,7 +68,7 @@ data = {
 # 第50行
 data = {
     # ... 其他字段
-    'val_idx': df['val_idx'].tolist() if 'val_idx' in df.columns else [],  # ⚠️
+    "val_idx": df["val_idx"].tolist() if "val_idx" in df.columns else [],  # ⚠️
     # ...
 }
 ```
@@ -76,8 +76,10 @@ data = {
 #### 修改3：CSV 加载时的警告提示
 ```python
 # 第61行
-if key == 'val_idx' and status == "✗":
-    print(f"  {status} {key} (⚠️  CSV format limitation - validation curves will use sequential indexing)")
+if key == "val_idx" and status == "✗":
+    print(
+        f"  {status} {key} (⚠️  CSV format limitation - validation curves will use sequential indexing)"
+    )
 ```
 
 **限制说明：**
@@ -114,17 +116,20 @@ if len(data['val_f1_history']) > 0:
 #### 修改3：图表注释增强
 ```python
 # 第245-248行
-if len(data['f1_on_training_data']) == 0 and len(data['val_f1_history']) > 0:
-    note = 'Training F1 not recorded in CSV\n(only validation F1 available)'
-    if len(data['val_idx']) > 0:
-        note += '\n(val-after-train mode detected)'  # ✅ 模式检测
+if len(data["f1_on_training_data"]) == 0 and len(data["val_f1_history"]) > 0:
+    note = "Training F1 not recorded in CSV\n(only validation F1 available)"
+    if len(data["val_idx"]) > 0:
+        note += "\n(val-after-train mode detected)"  # ✅ 模式检测
 ```
 
 **核心逻辑：**
 ```python
 # 智能横轴选择
-val_x = data['val_idx'] if len(data['val_idx']) == len(data['val_acc_history']) \
-        else rounds[:len(data['val_acc_history'])]
+val_x = (
+    data["val_idx"]
+    if len(data["val_idx"]) == len(data["val_acc_history"])
+    else rounds[: len(data["val_acc_history"])]
+)
 ```
 
 **判断规则：**
@@ -139,11 +144,13 @@ val_x = data['val_idx'] if len(data['val_idx']) == len(data['val_acc_history']) 
 ```python
 # 第306-313行
 # 显示验证模式信息
-if len(data['val_idx']) > 0:
-    print(f"   - Validation Mode: val-after-train (sampled at {len(data['val_idx'])} rounds)")
-    if len(data['val_idx']) <= 10:
+if len(data["val_idx"]) > 0:
+    print(
+        f"   - Validation Mode: val-after-train (sampled at {len(data['val_idx'])} rounds)"
+    )
+    if len(data["val_idx"]) <= 10:
         print(f"   - Val Rounds: {data['val_idx']}")
-elif len(data['val_acc_history']) > 0:
+elif len(data["val_acc_history"]) > 0:
     print(f"   - Validation Mode: val-every-round (or val_idx not recorded)")
 ```
 
@@ -196,8 +203,11 @@ val_idx = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500]
 
 ### 1. 智能降级策略
 ```python
-val_x = data['val_idx'] if len(data['val_idx']) == len(data['val_acc_history']) \
-        else rounds[:len(data['val_acc_history'])]
+val_x = (
+    data["val_idx"]
+    if len(data["val_idx"]) == len(data["val_acc_history"])
+    else rounds[: len(data["val_acc_history"])]
+)
 ```
 - ✅ 优先使用完整语义（val_idx）
 - ✅ 自动降级兼容旧数据
@@ -213,7 +223,7 @@ val_x = data['val_idx'] if len(data['val_idx']) == len(data['val_acc_history']) 
 
 ### 3. 用户友好提示
 ```python
-if key == 'val_idx' and status == "✗":
+if key == "val_idx" and status == "✗":
     print(f"  {status} {key} (⚠️  CSV format limitation ...)")
 ```
 - ✅ 明确告知 CSV 的限制
@@ -278,14 +288,14 @@ monitor = BoostMonitor(...)
 
 for i in range(n_estimators):
     # 训练...
-    
+
     # val-after-train：仅在特定轮次验证
     if (i + 1) % 50 == 0:
         val_acc, val_f1 = evaluate_on_val_set(clf)
         monitor.record_validation(i, val_acc, val_f1)  # ✅ 自动记录 val_idx
 
 # 保存
-joblib.dump(monitor, 'experiments/my_exp/results/monitor.joblib')  # ✅ 推荐
+joblib.dump(monitor, "experiments/my_exp/results/monitor.joblib")  # ✅ 推荐
 ```
 
 #### 2. 可视化时加载 joblib

@@ -2,6 +2,7 @@
 快速演示脚本：生成包含 val_idx 的监控数据
 用于测试严格模式的可视化功能
 """
+
 import os
 
 import joblib
@@ -19,13 +20,11 @@ print("=" * 60)
 
 # 1. 准备数据
 print("\n📊 准备数据...")
-data_prep = DataPreparation(
-    noise_ratio=0.0,
-    test_size=0.2,
-    random_state=42
-)
+data_prep = DataPreparation(noise_ratio=0.0, test_size=0.2, random_state=42)
 
-X_train, X_test, y_train, y_test, train_noise_indices, train_clean_indices = data_prep.prepare()
+X_train, X_test, y_train, y_test, train_noise_indices, train_clean_indices = (
+    data_prep.prepare()
+)
 print(f"✓ 训练集: {X_train.shape[0]} 样本")
 print(f"✓ 测试集: {X_test.shape[0]} 样本")
 
@@ -34,7 +33,7 @@ print("\n📈 初始化监控器...")
 monitor = BoostMonitor(
     noise_indices=train_noise_indices,
     clean_indices=train_clean_indices,
-    is_data_noisy=False
+    is_data_noisy=False,
 )
 print("✓ BoostMonitor 初始化完成")
 print(f"✓ val_idx 字段存在: {hasattr(monitor, 'val_idx')}")
@@ -49,11 +48,11 @@ for i in range(n_estimators):
     error = 0.35 - 0.003 * i + np.random.normal(0, 0.01)
     error = np.clip(error, 0.1, 0.5)
     alpha = np.log((1 - error) / error)
-    
+
     monitor.error_history.append(error)
     monitor.alpha_history.append(alpha)
     monitor.error_without_weight_history.append(error)
-    
+
     # 模拟样本权重
     sample_weights = np.random.uniform(0.0001, 0.002, len(X_train))
     sample_weights /= sample_weights.sum()
@@ -68,7 +67,7 @@ clf = AdaBoostClassifier(
     n_estimators=50,
     learning_rate=1.0,
     random_state=42,
-    algorithm='SAMME'
+    algorithm="SAMME",
 )
 clf.fit(X_train, y_train)
 print("✓ 模型训练完成")
@@ -83,19 +82,19 @@ for round_idx in val_rounds:
         n_estimators=round_idx,
         learning_rate=1.0,
         random_state=42,
-        algorithm='SAMME'
+        algorithm="SAMME",
     )
     clf_temp.estimators_ = clf.estimators_[:round_idx]
     clf_temp.estimator_weights_ = clf.estimator_weights_[:round_idx]
     clf_temp.estimator_errors_ = clf.estimator_errors_[:round_idx]
     clf_temp.classes_ = clf.classes_
     clf_temp.n_classes_ = clf.n_classes_
-    
+
     # 在测试集上验证
     y_pred = clf_temp.predict(X_test)
     val_acc = accuracy_score(y_test, y_pred)
-    val_f1 = f1_score(y_test, y_pred, average='weighted')
-    
+    val_f1 = f1_score(y_test, y_pred, average="weighted")
+
     # 记录验证结果（注意：round_idx 是1-based的轮次）
     monitor.record_validation(round_idx - 1, val_acc, val_f1)
     print(f"  Round {round_idx:2d}: val_acc={val_acc:.4f}, val_f1={val_f1:.4f}")
@@ -120,7 +119,9 @@ print("✓ 加载成功")
 print(f"✓ val_idx 存在: {hasattr(loaded_monitor, 'val_idx')}")
 print(f"✓ val_idx 长度: {len(loaded_monitor.val_idx)}")
 print(f"✓ val_acc_history 长度: {len(loaded_monitor.val_acc_history)}")
-print(f"✓ 长度匹配: {len(loaded_monitor.val_idx) == len(loaded_monitor.val_acc_history)}")
+print(
+    f"✓ 长度匹配: {len(loaded_monitor.val_idx) == len(loaded_monitor.val_acc_history)}"
+)
 
 print("\n" + "=" * 60)
 print("✅ 演示数据生成完成！")
@@ -129,4 +130,3 @@ print("\n现在可以运行可视化：")
 print("python scripts/visualization/visualize_from_results.py \\")
 print(f"    --joblib {joblib_path}")
 print("=" * 60)
-

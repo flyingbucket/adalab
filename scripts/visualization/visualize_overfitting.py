@@ -19,7 +19,7 @@ def visualize_monitor_data(monitor, n_estimators, is_noisy):
     """
     可视化 BoostMonitor 记录的训练数据
     参考 docs/monitor.md 中的数据结构
-    
+
     生成 6 个子图：
     1. 错误率演化（weighted vs unweighted）
     2. Alpha 系数演化
@@ -29,112 +29,188 @@ def visualize_monitor_data(monitor, n_estimators, is_noisy):
     6. 样本权重分布变化
     """
     fig, axes = plt.subplots(2, 3, figsize=(18, 10))
-    fig.suptitle(f'Detailed Training Monitoring (n_estimators={n_estimators})', 
-                 fontsize=16, fontweight='bold')
-    
+    fig.suptitle(
+        f"Detailed Training Monitoring (n_estimators={n_estimators})",
+        fontsize=16,
+        fontweight="bold",
+    )
+
     rounds = list(range(1, len(monitor.error_history) + 1))
-    
+
     # 1. 错误率演化
     ax1 = axes[0, 0]
-    ax1.plot(rounds, monitor.error_history, 'b-', linewidth=2, label='Weighted Error')
+    ax1.plot(rounds, monitor.error_history, "b-", linewidth=2, label="Weighted Error")
     if len(monitor.error_without_weight_history) == len(rounds):
-        ax1.plot(rounds, monitor.error_without_weight_history, 'r--', 
-                linewidth=2, label='Unweighted Error', alpha=0.7)
-    ax1.set_xlabel('Boosting Round')
-    ax1.set_ylabel('Error Rate')
-    ax1.set_title('Error Rate Evolution')
+        ax1.plot(
+            rounds,
+            monitor.error_without_weight_history,
+            "r--",
+            linewidth=2,
+            label="Unweighted Error",
+            alpha=0.7,
+        )
+    ax1.set_xlabel("Boosting Round")
+    ax1.set_ylabel("Error Rate")
+    ax1.set_title("Error Rate Evolution")
     ax1.legend()
     ax1.grid(True, alpha=0.3)
-    
+
     # 2. Alpha 系数
     ax2 = axes[0, 1]
-    ax2.plot(rounds, monitor.alpha_history, 'g-', linewidth=2, marker='o', markersize=4)
-    ax2.axhline(y=np.mean(monitor.alpha_history), color='orange', linestyle='--', 
-               label=f'Mean={np.mean(monitor.alpha_history):.3f}', alpha=0.7)
-    ax2.set_xlabel('Boosting Round')
-    ax2.set_ylabel('Alpha (Weak Learner Weight)')
-    ax2.set_title('Alpha Coefficient Evolution')
+    ax2.plot(rounds, monitor.alpha_history, "g-", linewidth=2, marker="o", markersize=4)
+    ax2.axhline(
+        y=np.mean(monitor.alpha_history),
+        color="orange",
+        linestyle="--",
+        label=f"Mean={np.mean(monitor.alpha_history):.3f}",
+        alpha=0.7,
+    )
+    ax2.set_xlabel("Boosting Round")
+    ax2.set_ylabel("Alpha (Weak Learner Weight)")
+    ax2.set_title("Alpha Coefficient Evolution")
     ax2.legend()
     ax2.grid(True, alpha=0.3)
-    
+
     # 3. 准确率
     ax3 = axes[0, 2]
     if len(monitor.acc_on_train_data) > 0:
-        ax3.plot(rounds, monitor.acc_on_train_data, 'b-', linewidth=2, 
-                label='Train Accuracy', marker='o', markersize=4)
+        ax3.plot(
+            rounds,
+            monitor.acc_on_train_data,
+            "b-",
+            linewidth=2,
+            label="Train Accuracy",
+            marker="o",
+            markersize=4,
+        )
     if len(monitor.val_acc_history) > 0:
-        ax3.plot(rounds, monitor.val_acc_history, 'r-', linewidth=2, 
-                label='Val Accuracy', marker='s', markersize=4)
-    ax3.set_xlabel('Boosting Round')
-    ax3.set_ylabel('Accuracy')
-    ax3.set_title('Accuracy Evolution')
+        ax3.plot(
+            rounds,
+            monitor.val_acc_history,
+            "r-",
+            linewidth=2,
+            label="Val Accuracy",
+            marker="s",
+            markersize=4,
+        )
+    ax3.set_xlabel("Boosting Round")
+    ax3.set_ylabel("Accuracy")
+    ax3.set_title("Accuracy Evolution")
     ax3.legend()
     ax3.grid(True, alpha=0.3)
-    
+
     # 4. 噪声 vs 干净样本权重
     ax4 = axes[1, 0]
     if is_noisy and len(monitor.noisy_weight_history) > 0:
-        ax4.plot(rounds, monitor.noisy_weight_history, 'r-', linewidth=2, 
-                label='Noisy Samples', marker='o', markersize=4)
-        ax4.plot(rounds, monitor.clean_weight_history, 'g-', linewidth=2, 
-                label='Clean Samples', marker='s', markersize=4)
-        ax4.axhline(y=0.5, color='black', linestyle='--', alpha=0.3, linewidth=1)
-        ax4.set_xlabel('Boosting Round')
-        ax4.set_ylabel('Total Weight')
-        ax4.set_title('Noisy vs Clean Sample Weights')
+        ax4.plot(
+            rounds,
+            monitor.noisy_weight_history,
+            "r-",
+            linewidth=2,
+            label="Noisy Samples",
+            marker="o",
+            markersize=4,
+        )
+        ax4.plot(
+            rounds,
+            monitor.clean_weight_history,
+            "g-",
+            linewidth=2,
+            label="Clean Samples",
+            marker="s",
+            markersize=4,
+        )
+        ax4.axhline(y=0.5, color="black", linestyle="--", alpha=0.3, linewidth=1)
+        ax4.set_xlabel("Boosting Round")
+        ax4.set_ylabel("Total Weight")
+        ax4.set_title("Noisy vs Clean Sample Weights")
         ax4.legend()
         ax4.grid(True, alpha=0.3)
     else:
-        ax4.text(0.5, 0.5, 'N/A\n(Clean Data)', 
-                ha='center', va='center', fontsize=14, color='gray', 
-                transform=ax4.transAxes)
+        ax4.text(
+            0.5,
+            0.5,
+            "N/A\n(Clean Data)",
+            ha="center",
+            va="center",
+            fontsize=14,
+            color="gray",
+            transform=ax4.transAxes,
+        )
         ax4.set_xticks([])
         ax4.set_yticks([])
-    
+
     # 5. F1 分数
     ax5 = axes[1, 1]
     if len(monitor.f1_on_training_data) > 0:
-        ax5.plot(rounds, monitor.f1_on_training_data, 'b-', linewidth=2, 
-                label='Train F1', marker='o', markersize=4)
+        ax5.plot(
+            rounds,
+            monitor.f1_on_training_data,
+            "b-",
+            linewidth=2,
+            label="Train F1",
+            marker="o",
+            markersize=4,
+        )
     if len(monitor.val_f1_history) > 0:
-        ax5.plot(rounds, monitor.val_f1_history, 'r-', linewidth=2, 
-                label='Val F1', marker='s', markersize=4)
-    ax5.set_xlabel('Boosting Round')
-    ax5.set_ylabel('F1 Score')
-    ax5.set_title('F1 Score Evolution')
+        ax5.plot(
+            rounds,
+            monitor.val_f1_history,
+            "r-",
+            linewidth=2,
+            label="Val F1",
+            marker="s",
+            markersize=4,
+        )
+    ax5.set_xlabel("Boosting Round")
+    ax5.set_ylabel("F1 Score")
+    ax5.set_title("F1 Score Evolution")
     ax5.legend()
     ax5.grid(True, alpha=0.3)
-    
+
     # 6. 样本权重分布
     ax6 = axes[1, 2]
     if len(monitor.sample_weights_history) > 0:
         # 选择关键轮次
-        key_rounds = [0, len(rounds)//3, len(rounds)*2//3, len(rounds)-1]
+        key_rounds = [0, len(rounds) // 3, len(rounds) * 2 // 3, len(rounds) - 1]
         positions = []
         data_to_plot = []
         labels = []
-        
+
         for i, idx in enumerate(key_rounds):
             if idx < len(monitor.sample_weights_history):
                 positions.append(i + 1)
                 data_to_plot.append(monitor.sample_weights_history[idx])
-                labels.append(f'R{idx+1}')
-        
-        bp = ax6.boxplot(data_to_plot, positions=positions, widths=0.6, 
-                        patch_artist=True, labels=labels)
-        for patch in bp['boxes']:
-            patch.set_facecolor('lightblue')
+                labels.append(f"R{idx + 1}")
+
+        bp = ax6.boxplot(
+            data_to_plot,
+            positions=positions,
+            widths=0.6,
+            patch_artist=True,
+            labels=labels,
+        )
+        for patch in bp["boxes"]:
+            patch.set_facecolor("lightblue")
             patch.set_alpha(0.7)
-        
-        ax6.set_ylabel('Sample Weight')
-        ax6.set_title('Sample Weight Distribution')
-        ax6.grid(True, alpha=0.3, axis='y')
+
+        ax6.set_ylabel("Sample Weight")
+        ax6.set_title("Sample Weight Distribution")
+        ax6.grid(True, alpha=0.3, axis="y")
     else:
-        ax6.text(0.5, 0.5, 'N/A', ha='center', va='center', 
-                fontsize=14, color='gray', transform=ax6.transAxes)
+        ax6.text(
+            0.5,
+            0.5,
+            "N/A",
+            ha="center",
+            va="center",
+            fontsize=14,
+            color="gray",
+            transform=ax6.transAxes,
+        )
         ax6.set_xticks([])
         ax6.set_yticks([])
-    
+
     plt.tight_layout()
     plt.show()
     plt.close()
@@ -212,7 +288,9 @@ def main():
 
     print(f"基学习器: 决策树 (max_depth={config['base_estimator'].max_depth})")
     print(f"测试点数量: {len(config['n_estimators_list'])}")
-    print(f"弱学习器范围: {config['n_estimators_list'][0]} - {config['n_estimators_list'][-1]}")
+    print(
+        f"弱学习器范围: {config['n_estimators_list'][0]} - {config['n_estimators_list'][-1]}"
+    )
     print(f"学习率: {config['learning_rate']}")
 
     # ========== 4. 可视化过拟合 ==========
@@ -263,7 +341,7 @@ def main():
     # 噪声数据的额外建议
     if noise_ratio > 0:
         print("\n💡 噪声数据建议:")
-        print(f"   - 当前数据有 {noise_ratio*100:.0f}% 噪声")
+        print(f"   - 当前数据有 {noise_ratio * 100:.0f}% 噪声")
         print("   - AdaBoost 对噪声敏感，容易过拟合")
         print("   - 建议:")
         print(f"     1. 使用较少的弱学习器（{best_n} 左右）")
@@ -273,42 +351,42 @@ def main():
     # ========== 6. 可选：详细训练监控 ==========
     # 取消下面的注释来启用详细监控可视化
     enable_detailed_monitoring = False  # 设为 True 启用详细监控
-    
+
     if enable_detailed_monitoring:
         print("\n" + "=" * 60)
         print("详细训练监控".center(56))
         print("=" * 60)
         print(f"\n重新训练最佳模型 (n={best_n})，启用监控...")
-        
+
         # 创建监控器（参考 docs/monitor.md）
         monitor = BoostMonitor(
             noise_indices=noise_idx,
             clean_indices=clean_idx,
             is_data_noisy=(noise_ratio > 0),
             checkpoint_interval=999,
-            checkpoint_prefix="temp"
+            checkpoint_prefix="temp",
         )
-        
+
         # 使用监控器训练
         clf_monitored = AdaBoostClfWithMonitor(
             estimator=config["base_estimator"],
             n_estimators=best_n,
             learning_rate=config["learning_rate"],
             random_state=config["random_state"],
-            monitor=monitor
+            monitor=monitor,
         )
         clf_monitored.fit(X_train, y_train)
-        
+
         # 生成详细可视化（6个子图）
         print("\n生成详细训练过程可视化...")
         visualize_monitor_data(monitor, best_n, noise_ratio > 0)
-        
+
         print("\n✓ 详细监控可视化完成！")
         print("\n📊 监控数据包含:")
         print(f"   - 错误率历史: {len(monitor.error_history)} 轮")
         print(f"   - Alpha系数: {len(monitor.alpha_history)} 轮")
         print(f"   - 样本权重演化: {len(monitor.sample_weights_history)} 轮")
-    
+
     print("\n" + "=" * 60)
     print("\n✓ 可视化完成！")
     print("\n💡 提示:")
@@ -321,5 +399,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

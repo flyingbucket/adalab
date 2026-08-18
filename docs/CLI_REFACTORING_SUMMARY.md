@@ -236,6 +236,7 @@ python main.py visualize --joblib monitor.joblib --save output.png
 # adalab/cli/train.py
 from src.adalab.core.trainer import TrainingPipeline
 
+
 def train_command(args):
     pipeline = TrainingPipeline(config_path=args.config)
     return pipeline.run()

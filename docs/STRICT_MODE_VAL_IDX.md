@@ -21,7 +21,7 @@
 
 **加载 joblib 时的检查：**
 ```python
-if not hasattr(monitor, 'val_idx'):
+if not hasattr(monitor, "val_idx"):
     raise AttributeError(
         "BoostMonitor 对象缺少 'val_idx' 字段！\n"
         "请使用更新后的 BoostMonitor 类重新训练模型。"
@@ -38,7 +38,7 @@ if not hasattr(monitor, 'val_idx'):
 
 **加载 CSV 时的检查：**
 ```python
-if 'val_idx' not in df.columns:
+if "val_idx" not in df.columns:
     raise ValueError(
         "CSV 文件缺少 'val_idx' 列！\n"
         "CSV 格式无法完整支持 val-after-train 模式。\n"
@@ -56,7 +56,7 @@ if 'val_idx' not in df.columns:
 
 **可视化时的检查：**
 ```python
-if len(data['val_idx']) != len(data['val_acc_history']):
+if len(data["val_idx"]) != len(data["val_acc_history"]):
     raise ValueError(
         f"val_idx 长度 ({len(data['val_idx'])}) 与 val_acc_history 长度不匹配！\n"
         "数据完整性检查失败。"
@@ -79,22 +79,20 @@ import joblib
 
 # 1. 初始化监控器
 monitor = BoostMonitor(
-    noise_indices=noise_idx,
-    clean_indices=clean_idx,
-    is_data_noisy=True
+    noise_indices=noise_idx, clean_indices=clean_idx, is_data_noisy=True
 )
 
 # 2. 训练循环
 for i in range(n_estimators):
     # 训练...
-    
+
     # 验证（每N轮或指定轮次）
     if should_validate(i):
         val_acc, val_f1 = evaluate_on_val_set(clf)
         monitor.record_validation(i, val_acc, val_f1)  # ✅ 自动记录 val_idx
 
 # 3. 保存（必须使用 joblib）
-joblib.dump(monitor, 'experiments/my_exp/results/monitor.joblib')  # ✅ 推荐
+joblib.dump(monitor, "experiments/my_exp/results/monitor.joblib")  # ✅ 推荐
 ```
 
 **关键点：**
@@ -113,16 +111,16 @@ import pandas as pd
 
 # 确保包含 val_idx 列
 data = {
-    'round': [1, 2, 3, ..., 500],
-    'weighted_error': [...],
-    'alpha': [...],
-    'val_acc': [None, None, ..., 0.85, None, ...],  # 稀疏
-    'val_idx': [None, None, ..., 50, None, ...],    # ✅ 必须有此列
+    "round": [1, 2, 3, ..., 500],
+    "weighted_error": [...],
+    "alpha": [...],
+    "val_acc": [None, None, ..., 0.85, None, ...],  # 稀疏
+    "val_idx": [None, None, ..., 50, None, ...],  # ✅ 必须有此列
     # ... 其他列
 }
 
 df = pd.DataFrame(data)
-df.to_csv('monitor.csv', index=False)
+df.to_csv("monitor.csv", index=False)
 ```
 
 **问题：**
@@ -172,8 +170,8 @@ python scripts/visualization/visualize_from_results.py \
 ```python
 # 数据不一致
 data = {
-    'val_acc_history': [0.85, 0.88, 0.90],  # 3个值
-    'val_idx': [50, 100],                   # 2个值 ❌
+    "val_acc_history": [0.85, 0.88, 0.90],  # 3个值
+    "val_idx": [50, 100],  # 2个值 ❌
 }
 
 # 报错：
@@ -227,7 +225,7 @@ python scripts/training/main_experiment.py --config configs/my_config.json
 import joblib
 
 # 检查 monitor 是否有 val_idx
-monitor = joblib.load('experiments/my_exp/results/monitor.joblib')
+monitor = joblib.load("experiments/my_exp/results/monitor.joblib")
 print(f"val_idx 可用: {hasattr(monitor, 'val_idx')}")
 print(f"val_idx 长度: {len(monitor.val_idx)}")
 print(f"val_acc_history 长度: {len(monitor.val_acc_history)}")
@@ -319,7 +317,7 @@ ValueError: val_idx 长度 (5) 与 val_acc_history 长度 (6) 不匹配！
 
 1. **使用 joblib 格式**
    ```python
-   joblib.dump(monitor, 'monitor.joblib')
+   joblib.dump(monitor, "monitor.joblib")
    ```
 
 2. **每次验证都记录**
@@ -329,8 +327,8 @@ ValueError: val_idx 长度 (5) 与 val_acc_history 长度 (6) 不匹配！
 
 3. **加载前验证**
    ```python
-   monitor = joblib.load('monitor.joblib')
-   assert hasattr(monitor, 'val_idx'), "缺少 val_idx 字段"
+   monitor = joblib.load("monitor.joblib")
+   assert hasattr(monitor, "val_idx"), "缺少 val_idx 字段"
    assert len(monitor.val_idx) == len(monitor.val_acc_history), "长度不匹配"
    ```
 

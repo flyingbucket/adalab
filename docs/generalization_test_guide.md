@@ -354,9 +354,9 @@ clf = create_robust_adaboost(strategy="balanced")
 ```python
 # 使用更保守的配置
 clf = AdaBoostClassifier(
-    n_estimators=30,        # 减少弱学习器
-    learning_rate=0.3,      # 降低学习率
-    base_estimator=DecisionTreeClassifier(max_depth=1)  # 简单基学习器
+    n_estimators=30,  # 减少弱学习器
+    learning_rate=0.3,  # 降低学习率
+    base_estimator=DecisionTreeClassifier(max_depth=1),  # 简单基学习器
 )
 ```
 
@@ -366,11 +366,14 @@ clf = AdaBoostClassifier(
 from sklearn.ensemble import VotingClassifier
 
 # 多模型投票
-clf = VotingClassifier([
-    ('adaboost', clf_adaboost),
-    ('rf', clf_random_forest),
-    ('svm', clf_svm),
-], voting='soft')
+clf = VotingClassifier(
+    [
+        ("adaboost", clf_adaboost),
+        ("rf", clf_random_forest),
+        ("svm", clf_svm),
+    ],
+    voting="soft",
+)
 ```
 
 ---
@@ -384,10 +387,12 @@ from test_generalization import MNISTPerturber
 
 perturber = MNISTPerturber()
 
+
 # 自定义扰动
 def my_perturbation(X):
     # 你的扰动逻辑
     return X_perturbed
+
 
 # 测试
 X_test_perturbed = my_perturbation(X_test)
@@ -423,10 +428,10 @@ for noise_std in noise_levels:
     accuracies.append(acc)
 
 # 绘制
-plt.plot(noise_levels, accuracies, 'o-')
-plt.xlabel('噪声标准差')
-plt.ylabel('准确率')
-plt.title('准确率 vs 噪声强度')
+plt.plot(noise_levels, accuracies, "o-")
+plt.xlabel("噪声标准差")
+plt.ylabel("准确率")
+plt.title("准确率 vs 噪声强度")
 plt.grid(True)
 plt.show()
 ```

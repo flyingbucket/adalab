@@ -323,8 +323,9 @@ def compare_command(args):
     # 实现比较逻辑
     pass
 
+
 def add_compare_parser(subparsers):
-    parser = subparsers.add_parser('compare', help='比较多个模型')
+    parser = subparsers.add_parser("compare", help="比较多个模型")
     # 添加参数
     parser.set_defaults(func=compare_command)
 ```

@@ -209,17 +209,17 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # 读取 CSV
-df = pd.read_csv('experiments/train_val_500rounds/results/final_results.csv')
+df = pd.read_csv("experiments/train_val_500rounds/results/final_results.csv")
 
 # 自定义绘图
 plt.figure(figsize=(10, 6))
-plt.plot(df['round'], df['val_acc'], label='Validation Accuracy')
-plt.xlabel('Round')
-plt.ylabel('Accuracy')
-plt.title('Custom Analysis')
+plt.plot(df["round"], df["val_acc"], label="Validation Accuracy")
+plt.xlabel("Round")
+plt.ylabel("Accuracy")
+plt.title("Custom Analysis")
 plt.legend()
 plt.grid(True)
-plt.savefig('custom_plot.png', dpi=300)
+plt.savefig("custom_plot.png", dpi=300)
 plt.show()
 ```
 

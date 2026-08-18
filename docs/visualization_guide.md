@@ -34,12 +34,15 @@ X_train, X_test, y_train, y_test, _, _ = prepare_data(noise_ratio=0.05)
 
 # 2. 运行可视化
 results = visualize_overfitting_process(
-    X_train, y_train, X_test, y_test,
+    X_train,
+    y_train,
+    X_test,
+    y_test,
     base_estimator=DecisionTreeClassifier(max_depth=1),
     n_estimators_list=[1, 5, 10, 20, 30, 40, 50, 75, 100],
     learning_rate=0.5,
     random_state=42,
-    save_path='overfitting_analysis.png'  # None则直接显示
+    save_path="overfitting_analysis.png",  # None则直接显示
 )
 ```
 
@@ -49,42 +52,42 @@ results = visualize_overfitting_process(
 
 ```python
 # 配置1: 快速测试（推荐）
-n_estimators_list=[1, 10, 30, 50, 100]  # 5个点，约3分钟
+n_estimators_list = [1, 10, 30, 50, 100]  # 5个点，约3分钟
 
 # 配置2: 标准测试（默认）
-n_estimators_list=[1, 5, 10, 20, 30, 40, 50, 75, 100]  # 9个点，约5-10分钟
+n_estimators_list = [1, 5, 10, 20, 30, 40, 50, 75, 100]  # 9个点，约5-10分钟
 
 # 配置3: 精细分析
-n_estimators_list=list(range(1, 51, 2))  # 25个点，约15-20分钟
+n_estimators_list = list(range(1, 51, 2))  # 25个点，约15-20分钟
 
 # 配置4: 扩展范围
-n_estimators_list=[1, 10, 20, 50, 100, 150, 200]  # 测试更多弱学习器
+n_estimators_list = [1, 10, 20, 50, 100, 150, 200]  # 测试更多弱学习器
 ```
 
 #### `base_estimator` - 基学习器配置
 
 ```python
 # 决策树桩（最常用）
-base_estimator=DecisionTreeClassifier(max_depth=1)
+base_estimator = DecisionTreeClassifier(max_depth=1)
 
 # 深度3的树（更容易过拟合）
-base_estimator=DecisionTreeClassifier(max_depth=3)
+base_estimator = DecisionTreeClassifier(max_depth=3)
 
 # 深度5的树（观察严重过拟合）
-base_estimator=DecisionTreeClassifier(max_depth=5)
+base_estimator = DecisionTreeClassifier(max_depth=5)
 ```
 
 #### `learning_rate` - 学习率
 
 ```python
 # 高学习率（收敛快，容易过拟合）
-learning_rate=1.0
+learning_rate = 1.0
 
 # 标准学习率（推荐）
-learning_rate=0.5
+learning_rate = 0.5
 
 # 低学习率（收敛慢，泛化好）
-learning_rate=0.1
+learning_rate = 0.1
 ```
 
 ### 输出解读
@@ -204,31 +207,31 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # 读取检查点数据
-df = pd.read_csv('experiments/my_exp/results/final_results.csv')
+df = pd.read_csv("experiments/my_exp/results/final_results.csv")
 
 # 绘制训练曲线
 plt.figure(figsize=(12, 5))
 
 # 子图1：准确率演化
 plt.subplot(1, 2, 1)
-plt.plot(df['round'], df['acc_on_training_data'], label='训练准确率')
-plt.plot(df['round'], df['val_acc_history'], label='验证准确率')
-plt.xlabel('训练轮次')
-plt.ylabel('准确率')
+plt.plot(df["round"], df["acc_on_training_data"], label="训练准确率")
+plt.plot(df["round"], df["val_acc_history"], label="验证准确率")
+plt.xlabel("训练轮次")
+plt.ylabel("准确率")
 plt.legend()
 plt.grid(True)
 
 # 子图2：样本权重演化
 plt.subplot(1, 2, 2)
-plt.plot(df['round'], df['noisy_weight'], label='噪声样本权重', color='red')
-plt.plot(df['round'], df['clean_weight'], label='干净样本权重', color='green')
-plt.xlabel('训练轮次')
-plt.ylabel('权重总和')
+plt.plot(df["round"], df["noisy_weight"], label="噪声样本权重", color="red")
+plt.plot(df["round"], df["clean_weight"], label="干净样本权重", color="green")
+plt.xlabel("训练轮次")
+plt.ylabel("权重总和")
 plt.legend()
 plt.grid(True)
 
 plt.tight_layout()
-plt.savefig('custom_monitoring.png', dpi=300)
+plt.savefig("custom_monitoring.png", dpi=300)
 plt.show()
 ```
 
@@ -290,10 +293,13 @@ python compare_robust_methods.py
 ```python
 # 步骤1：运行过拟合可视化
 results = visualize_overfitting_process(
-    X_train, y_train, X_test, y_test,
+    X_train,
+    y_train,
+    X_test,
+    y_test,
     base_estimator=DecisionTreeClassifier(max_depth=1),
     n_estimators_list=[1, 5, 10, 20, 30, 40, 50, 75, 100],
-    learning_rate=0.5
+    learning_rate=0.5,
 )
 
 # 步骤2：提取最佳配置
@@ -303,10 +309,11 @@ print(f"最佳弱学习器数量: {best_n_estimators}")
 
 # 步骤3：使用最佳配置训练最终模型
 from sklearn.ensemble import AdaBoostClassifier
+
 clf = AdaBoostClassifier(
     base_estimator=DecisionTreeClassifier(max_depth=1),
     n_estimators=best_n_estimators,
-    learning_rate=0.5
+    learning_rate=0.5,
 )
 clf.fit(X_train, y_train)
 ```
@@ -319,16 +326,19 @@ clf.fit(X_train, y_train)
 noise_levels = [0, 0.05, 0.10]
 
 for noise in noise_levels:
-    print(f"\n测试噪声水平: {noise*100}%")
-    
+    print(f"\n测试噪声水平: {noise * 100}%")
+
     X_train, X_test, y_train, y_test, _, _ = prepare_data(noise_ratio=noise)
-    
+
     results = visualize_overfitting_process(
-        X_train, y_train, X_test, y_test,
+        X_train,
+        y_train,
+        X_test,
+        y_test,
         base_estimator=DecisionTreeClassifier(max_depth=1),
         n_estimators_list=[1, 5, 10, 20, 30, 40, 50, 75, 100],
         learning_rate=0.5,
-        save_path=f'results/noise_{int(noise*100)}.png'
+        save_path=f"results/noise_{int(noise * 100)}.png",
     )
 ```
 
@@ -346,13 +356,16 @@ depths = [1, 3, 5]
 
 for depth in depths:
     print(f"\n测试树深度: {depth}")
-    
+
     results = visualize_overfitting_process(
-        X_train, y_train, X_test, y_test,
+        X_train,
+        y_train,
+        X_test,
+        y_test,
         base_estimator=DecisionTreeClassifier(max_depth=depth),
         n_estimators_list=[1, 5, 10, 20, 30, 40, 50],
         learning_rate=0.5,
-        save_path=f'results/depth_{depth}.png'
+        save_path=f"results/depth_{depth}.png",
     )
 ```
 
@@ -370,13 +383,16 @@ learning_rates = [0.1, 0.3, 0.5, 1.0]
 
 for lr in learning_rates:
     print(f"\n测试学习率: {lr}")
-    
+
     results = visualize_overfitting_process(
-        X_train, y_train, X_test, y_test,
+        X_train,
+        y_train,
+        X_test,
+        y_test,
         base_estimator=DecisionTreeClassifier(max_depth=1),
         n_estimators_list=[1, 10, 20, 30, 50, 75, 100, 150, 200],
         learning_rate=lr,
-        save_path=f'results/lr_{lr}.png'
+        save_path=f"results/lr_{lr}.png",
     )
 ```
 
@@ -407,42 +423,56 @@ plt.figure(figsize=(12, 5))
 plt.subplot(1, 2, 1)
 for config in configs:
     results = visualize_overfitting_process(
-        X_train, y_train, X_test, y_test,
+        X_train,
+        y_train,
+        X_test,
+        y_test,
         base_estimator=DecisionTreeClassifier(max_depth=config["depth"]),
         n_estimators_list=[1, 10, 20, 30, 50, 75, 100],
         learning_rate=config["lr"],
-        save_path=None  # 不保存
+        save_path=None,  # 不保存
     )
-    plt.plot(results["n_estimators"], results["test_accuracy"], 
-             label=config["label"], marker='o')
+    plt.plot(
+        results["n_estimators"],
+        results["test_accuracy"],
+        label=config["label"],
+        marker="o",
+    )
 
-plt.xlabel('弱学习器数量')
-plt.ylabel('测试准确率')
+plt.xlabel("弱学习器数量")
+plt.ylabel("测试准确率")
 plt.legend()
 plt.grid(True)
-plt.title('测试准确率对比')
+plt.title("测试准确率对比")
 
 # 子图2：过拟合程度对比
 plt.subplot(1, 2, 2)
 for config in configs:
     results = visualize_overfitting_process(
-        X_train, y_train, X_test, y_test,
+        X_train,
+        y_train,
+        X_test,
+        y_test,
         base_estimator=DecisionTreeClassifier(max_depth=config["depth"]),
         n_estimators_list=[1, 10, 20, 30, 50, 75, 100],
         learning_rate=config["lr"],
-        save_path=None
+        save_path=None,
     )
-    plt.plot(results["n_estimators"], results["overfitting_degree"], 
-             label=config["label"], marker='s')
+    plt.plot(
+        results["n_estimators"],
+        results["overfitting_degree"],
+        label=config["label"],
+        marker="s",
+    )
 
-plt.xlabel('弱学习器数量')
-plt.ylabel('过拟合程度')
+plt.xlabel("弱学习器数量")
+plt.ylabel("过拟合程度")
 plt.legend()
 plt.grid(True)
-plt.title('过拟合程度对比')
+plt.title("过拟合程度对比")
 
 plt.tight_layout()
-plt.savefig('multi_config_comparison.png', dpi=300)
+plt.savefig("multi_config_comparison.png", dpi=300)
 plt.show()
 ```
 
@@ -452,66 +482,86 @@ plt.show()
 import matplotlib.animation as animation
 
 # 读取检查点数据
-df = pd.read_csv('experiments/my_exp/results/final_results.csv')
+df = pd.read_csv("experiments/my_exp/results/final_results.csv")
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+
 
 def update(frame):
     ax1.clear()
     ax2.clear()
-    
+
     # 子图1：准确率演化
-    ax1.plot(df['round'][:frame], df['acc_on_training_data'][:frame], 
-             label='训练', color='blue')
-    ax1.plot(df['round'][:frame], df['val_acc_history'][:frame], 
-             label='验证', color='red')
-    ax1.set_xlabel('训练轮次')
-    ax1.set_ylabel('准确率')
+    ax1.plot(
+        df["round"][:frame],
+        df["acc_on_training_data"][:frame],
+        label="训练",
+        color="blue",
+    )
+    ax1.plot(
+        df["round"][:frame], df["val_acc_history"][:frame], label="验证", color="red"
+    )
+    ax1.set_xlabel("训练轮次")
+    ax1.set_ylabel("准确率")
     ax1.set_ylim(0.6, 1.0)
     ax1.legend()
     ax1.grid(True)
-    ax1.set_title(f'准确率演化 (轮次: {frame})')
-    
+    ax1.set_title(f"准确率演化 (轮次: {frame})")
+
     # 子图2：样本权重演化
-    if 'noisy_weight' in df.columns:
-        ax2.plot(df['round'][:frame], df['noisy_weight'][:frame], 
-                 label='噪声样本', color='red')
-        ax2.plot(df['round'][:frame], df['clean_weight'][:frame], 
-                 label='干净样本', color='green')
-        ax2.set_xlabel('训练轮次')
-        ax2.set_ylabel('权重总和')
+    if "noisy_weight" in df.columns:
+        ax2.plot(
+            df["round"][:frame],
+            df["noisy_weight"][:frame],
+            label="噪声样本",
+            color="red",
+        )
+        ax2.plot(
+            df["round"][:frame],
+            df["clean_weight"][:frame],
+            label="干净样本",
+            color="green",
+        )
+        ax2.set_xlabel("训练轮次")
+        ax2.set_ylabel("权重总和")
         ax2.legend()
         ax2.grid(True)
-        ax2.set_title(f'样本权重演化 (轮次: {frame})')
+        ax2.set_title(f"样本权重演化 (轮次: {frame})")
+
 
 ani = animation.FuncAnimation(fig, update, frames=len(df), interval=100)
-ani.save('training_animation.gif', writer='pillow', fps=10)
+ani.save("training_animation.gif", writer="pillow", fps=10)
 ```
 
 ### 技巧3：生成论文级图表
 
 ```python
 # 设置论文风格
-plt.style.use('seaborn-v0_8-paper')
-plt.rcParams.update({
-    'font.size': 12,
-    'figure.dpi': 300,
-    'savefig.dpi': 300,
-    'font.family': 'serif',
-    'axes.labelsize': 14,
-    'axes.titlesize': 16,
-    'xtick.labelsize': 12,
-    'ytick.labelsize': 12,
-    'legend.fontsize': 12,
-})
+plt.style.use("seaborn-v0_8-paper")
+plt.rcParams.update(
+    {
+        "font.size": 12,
+        "figure.dpi": 300,
+        "savefig.dpi": 300,
+        "font.family": "serif",
+        "axes.labelsize": 14,
+        "axes.titlesize": 16,
+        "xtick.labelsize": 12,
+        "ytick.labelsize": 12,
+        "legend.fontsize": 12,
+    }
+)
 
 # 生成高质量图表
 results = visualize_overfitting_process(
-    X_train, y_train, X_test, y_test,
+    X_train,
+    y_train,
+    X_test,
+    y_test,
     base_estimator=DecisionTreeClassifier(max_depth=1),
     n_estimators_list=[1, 5, 10, 20, 30, 40, 50, 75, 100],
     learning_rate=0.5,
-    save_path='paper_figure1.pdf'  # PDF格式，矢量图
+    save_path="paper_figure1.pdf",  # PDF格式，矢量图
 )
 ```
 
@@ -552,10 +602,10 @@ results = visualize_overfitting_process(
 
 ```python
 # 从这个（9个点，10分钟）
-n_estimators_list=[1, 5, 10, 20, 30, 40, 50, 75, 100]
+n_estimators_list = [1, 5, 10, 20, 30, 40, 50, 75, 100]
 
 # 改为这个（5个点，5分钟）
-n_estimators_list=[1, 10, 30, 50, 100]
+n_estimators_list = [1, 10, 30, 50, 100]
 ```
 
 ### Q4: 如何保存图表？
@@ -564,13 +614,13 @@ n_estimators_list=[1, 10, 30, 50, 100]
 
 ```python
 # PNG格式（屏幕展示）
-save_path='my_result.png'
+save_path = "my_result.png"
 
 # PDF格式（论文/打印）
-save_path='my_result.pdf'
+save_path = "my_result.pdf"
 
 # None（只显示不保存）
-save_path=None
+save_path = None
 ```
 
 ### Q5: 如何对比多个实验结果？
@@ -580,21 +630,18 @@ save_path=None
 **方法1：保存多个图表**
 ```python
 for noise in [0, 0.05, 0.10]:
-    visualize_overfitting_process(
-        ...,
-        save_path=f'noise_{int(noise*100)}.png'
-    )
+    visualize_overfitting_process(..., save_path=f"noise_{int(noise * 100)}.png")
 ```
 
 **方法2：使用监控数据**
 ```python
 # 读取多个实验的CSV
-df1 = pd.read_csv('exp1/final_results.csv')
-df2 = pd.read_csv('exp2/final_results.csv')
+df1 = pd.read_csv("exp1/final_results.csv")
+df2 = pd.read_csv("exp2/final_results.csv")
 
 # 绘制对比
-plt.plot(df1['round'], df1['val_acc_history'], label='实验1')
-plt.plot(df2['round'], df2['val_acc_history'], label='实验2')
+plt.plot(df1["round"], df1["val_acc_history"], label="实验1")
+plt.plot(df2["round"], df2["val_acc_history"], label="实验2")
 plt.legend()
 plt.show()
 ```
@@ -610,15 +657,17 @@ python compare_robust_methods.py
 
 ```python
 from mplfonts.bin.cli import init
+
 init()  # 首次运行，自动下载中文字体
 ```
 
 如果还不行：
 ```python
 import matplotlib.pyplot as plt
-plt.rcParams['font.sans-serif'] = ['SimHei']  # Windows
+
+plt.rcParams["font.sans-serif"] = ["SimHei"]  # Windows
 # 或
-plt.rcParams['font.sans-serif'] = ['PingFang SC']  # Mac
+plt.rcParams["font.sans-serif"] = ["PingFang SC"]  # Mac
 ```
 
 ---
@@ -663,16 +712,17 @@ configs = {
 }
 
 for name, config in configs.items():
-    X_train, X_test, y_train, y_test, _, _ = prepare_data(
-        noise_ratio=config["noise"]
-    )
-    
+    X_train, X_test, y_train, y_test, _, _ = prepare_data(noise_ratio=config["noise"])
+
     visualize_overfitting_process(
-        X_train, y_train, X_test, y_test,
+        X_train,
+        y_train,
+        X_test,
+        y_test,
         base_estimator=DecisionTreeClassifier(max_depth=1),
         n_estimators_list=[1, 5, 10, 20, 30, 40, 50, 75, 100],
         learning_rate=0.5,
-        save_path=f'paper_figures/{name}.pdf'
+        save_path=f"paper_figures/{name}.pdf",
     )
 ```
 
@@ -681,13 +731,13 @@ for name, config in configs.items():
 ```python
 # 第1步：找最佳配置
 results = visualize_overfitting_process(...)
-best_n = results['n_estimators'][np.argmax(results['test_accuracy'])]
+best_n = results["n_estimators"][np.argmax(results["test_accuracy"])]
 
 # 第2步：使用最佳配置
 clf = AdaBoostClassifier(
     base_estimator=DecisionTreeClassifier(max_depth=1),
     n_estimators=best_n,
-    learning_rate=0.5
+    learning_rate=0.5,
 )
 clf.fit(X_train, y_train)
 

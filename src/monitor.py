@@ -8,5 +8,4 @@
 # 从新位置导入
 from src.adalab.monitor import BoostMonitor
 
-__all__ = ['BoostMonitor']
-
+__all__ = ["BoostMonitor"]

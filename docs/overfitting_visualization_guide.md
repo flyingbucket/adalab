@@ -38,14 +38,17 @@ python visualize_overfitting.py
 
 ```python
 # 取消下面的注释来运行过拟合可视化
-print("\n" + "="*60)
+print("\n" + "=" * 60)
 print("开始过拟合可视化分析...")
 visualize_overfitting_process(
-    X_train, y_train, X_test, y_test,
+    X_train,
+    y_train,
+    X_test,
+    y_test,
     base_estimator=DecisionTreeClassifier(max_depth=1),
     n_estimators_list=[1, 5, 10, 20, 30, 40, 50, 75, 100],
     learning_rate=0.5,
-    save_path='results/overfitting_process.png'
+    save_path="results/overfitting_process.png",
 )
 ```
 
@@ -71,12 +74,15 @@ X_train, X_test, y_train, y_test, _, _ = prepare_data(noise_ratio=0.05)
 
 # 可视化过拟合
 results = visualize_overfitting_process(
-    X_train, y_train, X_test, y_test,
+    X_train,
+    y_train,
+    X_test,
+    y_test,
     base_estimator=DecisionTreeClassifier(max_depth=1),
     n_estimators_list=[1, 5, 10, 20, 30, 40, 50, 75, 100],
     learning_rate=0.5,
     random_state=42,
-    save_path='my_overfitting.png'  # None 则显示不保存
+    save_path="my_overfitting.png",  # None 则显示不保存
 )
 ```
 
@@ -86,15 +92,15 @@ results = visualize_overfitting_process(
 
 ```python
 visualize_overfitting_process(
-    X_train,                    # 训练集特征
-    y_train,                    # 训练集标签
-    X_test,                     # 测试集特征
-    y_test,                     # 测试集标签
-    base_estimator,             # 基学习器（如DecisionTreeClassifier）
-    n_estimators_list=None,     # 弱学习器数量列表
-    learning_rate=0.5,          # 学习率
-    random_state=42,            # 随机种子
-    save_path=None,             # 保存路径（None则显示）
+    X_train,  # 训练集特征
+    y_train,  # 训练集标签
+    X_test,  # 测试集特征
+    y_test,  # 测试集标签
+    base_estimator,  # 基学习器（如DecisionTreeClassifier）
+    n_estimators_list=None,  # 弱学习器数量列表
+    learning_rate=0.5,  # 学习率
+    random_state=42,  # 随机种子
+    save_path=None,  # 保存路径（None则显示）
 )
 ```
 
@@ -150,11 +156,11 @@ DecisionTreeClassifier(max_depth=5)
 
 ```python
 # 不保存，直接显示
-save_path=None
+save_path = None
 
 # 保存到指定路径
-save_path='results/overfitting.png'
-save_path='overfitting_depth3.png'
+save_path = "results/overfitting.png"
+save_path = "overfitting_depth3.png"
 ```
 
 ## 可视化解读
@@ -305,9 +311,7 @@ learning_rates = [0.1, 0.3, 0.5, 1.0]
 
 for lr in learning_rates:
     results = visualize_overfitting_process(
-        ...,
-        learning_rate=lr,
-        save_path=f'results/lr_{lr}.png'
+        ..., learning_rate=lr, save_path=f"results/lr_{lr}.png"
     )
 ```
 
@@ -341,10 +345,7 @@ for lr in learning_rates:
 
 **A:** 设置 `save_path` 参数：
 ```python
-visualize_overfitting_process(
-    ...,
-    save_path='results/my_plot.png'
-)
+visualize_overfitting_process(..., save_path="results/my_plot.png")
 ```
 
 ### Q5: 训练时间太长怎么办？
@@ -373,7 +374,7 @@ for config in configs:
         ...,
         base_estimator=DecisionTreeClassifier(max_depth=config["depth"]),
         learning_rate=config["lr"],
-        save_path=f'results/depth{config["depth"]}_lr{config["lr"]}.png'
+        save_path=f"results/depth{config['depth']}_lr{config['lr']}.png",
     )
 ```
 
@@ -398,9 +399,9 @@ visualize_overfitting_process(...)  # 观察噪声影响
 
 ```python
 # 生成所有需要的图表
-visualize_overfitting_process(..., save_path='fig1_baseline.png')
-visualize_overfitting_process(..., save_path='fig2_noise05.png')
-visualize_overfitting_process(..., save_path='fig3_noise10.png')
+visualize_overfitting_process(..., save_path="fig1_baseline.png")
+visualize_overfitting_process(..., save_path="fig2_noise05.png")
+visualize_overfitting_process(..., save_path="fig3_noise10.png")
 
 # 在论文中引用这些图表
 ```

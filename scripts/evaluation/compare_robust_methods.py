@@ -36,9 +36,9 @@ def train_and_evaluate(clf, X_train, y_train, X_test, y_test, name):
     -------
     结果字典
     """
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"训练: {name}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     # 训练
     start_time = time.time()
@@ -60,9 +60,9 @@ def train_and_evaluate(clf, X_train, y_train, X_test, y_test, name):
 
     print(f"训练时间: {train_time:.2f} 秒")
     print(f"使用弱学习器数量: {n_used}")
-    print(f"训练集准确率: {train_acc:.4f} ({train_acc*100:.2f}%)")
-    print(f"测试集准确率: {test_acc:.4f} ({test_acc*100:.2f}%)")
-    print(f"过拟合程度: {overfit:.4f} ({overfit*100:.2f}%)")
+    print(f"训练集准确率: {train_acc:.4f} ({train_acc * 100:.2f}%)")
+    print(f"测试集准确率: {test_acc:.4f} ({test_acc * 100:.2f}%)")
+    print(f"过拟合程度: {overfit:.4f} ({overfit * 100:.2f}%)")
 
     return {
         "name": name,
@@ -108,9 +108,9 @@ def compare_on_noisy_samples(results, X_train, y_train, noise_idx, clean_idx):
         gap = clean_acc - noise_acc
 
         print(f"\n{result['name']}:")
-        print(f"  噪声样本准确率: {noise_acc:.4f} ({noise_acc*100:.2f}%)")
-        print(f"  干净样本准确率: {clean_acc:.4f} ({clean_acc*100:.2f}%)")
-        print(f"  准确率差距: {gap:.4f} ({gap*100:.2f}%)")
+        print(f"  噪声样本准确率: {noise_acc:.4f} ({noise_acc * 100:.2f}%)")
+        print(f"  干净样本准确率: {clean_acc:.4f} ({clean_acc * 100:.2f}%)")
+        print(f"  准确率差距: {gap:.4f} ({gap * 100:.2f}%)")
 
         result["noise_acc"] = noise_acc
         result["clean_acc"] = clean_acc
@@ -154,7 +154,9 @@ def plot_comparison(results, save_path=None):
     # 子图2: 过拟合程度
     ax2 = axes[0, 1]
     overfits = [r["overfit"] for r in results]
-    colors = ["red" if o > 0.15 else "orange" if o > 0.10 else "green" for o in overfits]
+    colors = [
+        "red" if o > 0.15 else "orange" if o > 0.10 else "green" for o in overfits
+    ]
 
     bars = ax2.bar(x, overfits, color=colors, alpha=0.7)
     ax2.axhline(y=0.10, color="orange", linestyle="--", linewidth=1, label="阈值:10%")
@@ -259,9 +261,7 @@ def print_summary(results):
     if "noise_gap" in results[0]:
         best_noise = min(results, key=lambda x: x["noise_gap"])
         print("\n💡 最佳噪声鲁棒性:")
-        print(
-            f"   {best_noise['name']}: 噪声差距 = {best_noise['noise_gap']:.4f}"
-        )
+        print(f"   {best_noise['name']}: 噪声差距 = {best_noise['noise_gap']:.4f}")
 
     # 改进幅度
     standard = next((r for r in results if "标准" in r["name"]), None)
@@ -275,11 +275,9 @@ def print_summary(results):
             overfit_improve = standard["overfit"] - result["overfit"]
 
             print(f"\n   {result['name']}:")
+            print(f"     测试准确率: {test_improve:+.4f} ({test_improve * 100:+.2f}%)")
             print(
-                f"     测试准确率: {test_improve:+.4f} ({test_improve*100:+.2f}%)"
-            )
-            print(
-                f"     过拟合减少: {overfit_improve:+.4f} ({overfit_improve*100:+.2f}%)"
+                f"     过拟合减少: {overfit_improve:+.4f} ({overfit_improve * 100:+.2f}%)"
             )
 
     print("\n" + "=" * 60)
@@ -302,7 +300,7 @@ def main():
     )
 
     print("数据集: MNIST")
-    print(f"噪声比例: {noise_ratio*100:.0f}%")
+    print(f"噪声比例: {noise_ratio * 100:.0f}%")
     print(f"训练集: {len(X_train)} 样本")
     print(f"测试集: {len(X_test)} 样本")
     print(f"噪声样本: {len(noise_idx)}")
@@ -373,7 +371,7 @@ def main():
 
     if noise_ratio > 0:
         print("\n   💡 噪声数据建议:")
-        print(f"      - 当前噪声: {noise_ratio*100:.0f}%")
+        print(f"      - 当前噪声: {noise_ratio * 100:.0f}%")
         if noise_ratio >= 0.1:
             print("      - 推荐使用: '鲁棒-激进裁剪' 或 '保守' 配置")
         else:
@@ -385,5 +383,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

@@ -17,7 +17,7 @@ import os
 import sys
 
 # 添加项目根目录到路径
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 sys.path.insert(0, project_root)
 
 from src.adalab.core.trainer import TrainingPipeline
@@ -25,22 +25,19 @@ from src.adalab.core.trainer import TrainingPipeline
 if __name__ == "__main__":
     print("⚠️  警告: 此脚本已废弃，建议使用根目录的 main.py")
     print("=" * 60)
-    
+
     parser = argparse.ArgumentParser(
         description="[兼容性包装器] 使用HOG特征训练AdaBoost模型"
     )
     parser.add_argument(
-        "--config_path", 
-        type=str, 
-        required=True,
-        help="配置文件路径 (JSON格式)"
+        "--config_path", type=str, required=True, help="配置文件路径 (JSON格式)"
     )
     args = parser.parse_args()
-    
+
     # 使用新的训练流程
     pipeline = TrainingPipeline(config_path=args.config_path)
     results = pipeline.run()
-    
+
     print("\n" + "=" * 60)
     print("✅ 训练完成！")
     print("💡 下次请使用: python main.py train --config", args.config_path)

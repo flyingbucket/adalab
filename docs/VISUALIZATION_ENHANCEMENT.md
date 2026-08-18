@@ -114,22 +114,22 @@ python visualize_overfitting_enhanced.py
 
 ```python
 # 错误率相关（2.2节）
-monitor.error_history              # 加权错误率 → 子图1
+monitor.error_history  # 加权错误率 → 子图1
 monitor.error_without_weight_history  # 未加权错误率 → 子图1
-monitor.alpha_history              # Alpha系数 → 子图2
+monitor.alpha_history  # Alpha系数 → 子图2
 
 # 验证集指标（2.3节）
-monitor.val_acc_history            # 验证准确率 → 子图3
-monitor.val_f1_history             # 验证F1 → 子图5
+monitor.val_acc_history  # 验证准确率 → 子图3
+monitor.val_f1_history  # 验证F1 → 子图5
 
 # 训练集指标（2.4节）
-monitor.acc_on_train_data          # 训练准确率 → 子图3
-monitor.f1_on_training_data        # 训练F1 → 子图5
+monitor.acc_on_train_data  # 训练准确率 → 子图3
+monitor.f1_on_training_data  # 训练F1 → 子图5
 
 # 样本权重相关（2.1节）
-monitor.sample_weights_history     # 完整权重向量 → 子图6
-monitor.noisy_weight_history       # 噪声样本权重和 → 子图4
-monitor.clean_weight_history       # 干净样本权重和 → 子图4
+monitor.sample_weights_history  # 完整权重向量 → 子图6
+monitor.noisy_weight_history  # 噪声样本权重和 → 子图4
+monitor.clean_weight_history  # 干净样本权重和 → 子图4
 ```
 
 ---
@@ -215,9 +215,11 @@ choice = 2  # 或 3（5%或10%噪声）
 ```python
 # 示例：添加第7个子图 - 错误率差异
 ax7 = plt.subplot(3, 3, 7)  # 改为3x3布局
-error_diff = np.array(monitor.error_history) - np.array(monitor.error_without_weight_history)
-ax7.plot(rounds, error_diff, 'purple', linewidth=2)
-ax7.set_title('Error Rate Difference')
+error_diff = np.array(monitor.error_history) - np.array(
+    monitor.error_without_weight_history
+)
+ax7.plot(rounds, error_diff, "purple", linewidth=2)
+ax7.set_title("Error Rate Difference")
 ax7.grid(True, alpha=0.3)
 ```
 
@@ -225,7 +227,7 @@ ax7.grid(True, alpha=0.3)
 
 修改函数调用：
 ```python
-visualize_monitor_data(monitor, best_n, noise_ratio > 0, save_path='monitoring.png')
+visualize_monitor_data(monitor, best_n, noise_ratio > 0, save_path="monitoring.png")
 ```
 
 ---

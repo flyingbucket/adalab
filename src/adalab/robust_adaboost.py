@@ -104,7 +104,7 @@ class RobustAdaBoost:
         # 早停相关
         best_val_score = 0
         rounds_without_improvement = 0
-        
+
         # 连续失败计数器（错误率>=0.5）
         consecutive_failures = 0
         max_consecutive_failures = 10  # 最多允许连续10次失败
@@ -135,10 +135,10 @@ class RobustAdaBoost:
                 consecutive_failures += 1
                 if consecutive_failures == 1:  # 第一次失败时打印警告
                     print(
-                        f"警告：轮次 {i+1} 错误率 {estimator_error:.4f} >= 0.5，"
+                        f"警告：轮次 {i + 1} 错误率 {estimator_error:.4f} >= 0.5，"
                         f"跳过此弱学习器..."
                     )
-                
+
                 # 如果连续失败次数过多，停止训练
                 if consecutive_failures >= max_consecutive_failures:
                     print(
@@ -146,7 +146,7 @@ class RobustAdaBoost:
                     )
                     print("建议：使用更强的基学习器（如增加 max_depth）或使用其他算法")
                     break
-                
+
                 # 跳过这个弱学习器，不添加到集成中
                 continue
             else:
@@ -186,7 +186,7 @@ class RobustAdaBoost:
                 # 打印进度（每10轮）
                 if (i + 1) % 10 == 0:
                     print(
-                        f"轮次 {i+1}/{self.n_estimators}: "
+                        f"轮次 {i + 1}/{self.n_estimators}: "
                         f"训练={train_score:.4f}, 验证={val_score:.4f}, "
                         f"最佳轮次={self.best_n_estimators_}"
                     )
@@ -195,7 +195,7 @@ class RobustAdaBoost:
                 if rounds_without_improvement >= self.early_stopping_rounds:
                     print(
                         f"\n早停: {self.early_stopping_rounds} 轮未提升，"
-                        f"停止在第 {i+1} 轮"
+                        f"停止在第 {i + 1} 轮"
                     )
                     print(f"使用前 {self.best_n_estimators_} 个弱学习器")
                     break
@@ -203,7 +203,7 @@ class RobustAdaBoost:
                 # 不使用早停时的进度显示
                 if (i + 1) % 10 == 0:
                     print(
-                        f"轮次 {i+1}/{self.n_estimators}: "
+                        f"轮次 {i + 1}/{self.n_estimators}: "
                         f"训练={train_score:.4f}, 错误率={estimator_error:.4f}"
                     )
 
@@ -416,16 +416,10 @@ def create_robust_adaboost(strategy="balanced", **kwargs):
     }
 
     if strategy not in configs:
-        raise ValueError(
-            f"未知策略: {strategy}. 可选: {list(configs.keys())}"
-        )
+        raise ValueError(f"未知策略: {strategy}. 可选: {list(configs.keys())}")
 
     # 合并用户提供的参数
     config = configs[strategy]
     config.update(kwargs)
 
     return RobustAdaBoost(**config)
-
-
-
-

@@ -24,7 +24,7 @@ for i in range(n_estimators):
 val_rounds = [10, 20, 50, 100, 200, 500]  # 指定验证轮次
 for i in range(n_estimators):
     train_one_round(i)
-    if (i+1) in val_rounds:
+    if (i + 1) in val_rounds:
         validate(i)  # 仅在指定轮次验证
 ```
 - **特点**：验证数据长度 < 训练轮数
@@ -52,7 +52,7 @@ plt.plot(range(len(val_acc)), val_acc)
 
 ```python
 # ✅ 正确：使用实际验证轮次作为横轴
-plt.plot(data['val_idx'], val_acc)  # [10, 20, 50, 100, 200, 500]
+plt.plot(data["val_idx"], val_acc)  # [10, 20, 50, 100, 200, 500]
 ```
 
 **效果**：
@@ -104,9 +104,9 @@ def record_validation(self, iboost, acc, f1):
 def load_from_joblib(joblib_path):
     monitor = joblib.load(joblib_path)
     data = {
-        'val_acc_history': monitor.val_acc_history,
-        'val_f1_history': monitor.val_f1_history,
-        'val_idx': monitor.val_idx if hasattr(monitor, 'val_idx') else [],  # ✅
+        "val_acc_history": monitor.val_acc_history,
+        "val_f1_history": monitor.val_f1_history,
+        "val_idx": monitor.val_idx if hasattr(monitor, "val_idx") else [],  # ✅
         # ... 其他字段
     }
     return data
@@ -122,9 +122,9 @@ def load_from_joblib(joblib_path):
 def load_from_csv(csv_path):
     df = pd.read_csv(csv_path)
     data = {
-        'val_acc_history': df['val_acc'].tolist() if 'val_acc' in df.columns else [],
-        'val_f1_history': df['val_f1'].tolist() if 'val_f1' in df.columns else [],
-        'val_idx': df['val_idx'].tolist() if 'val_idx' in df.columns else [],  # ⚠️
+        "val_acc_history": df["val_acc"].tolist() if "val_acc" in df.columns else [],
+        "val_f1_history": df["val_f1"].tolist() if "val_f1" in df.columns else [],
+        "val_idx": df["val_idx"].tolist() if "val_idx" in df.columns else [],  # ⚠️
         # ... 其他字段
     }
     return data
@@ -145,13 +145,15 @@ def load_from_csv(csv_path):
 
 ```python
 # ========== 准确率演化 ==========
-if len(data['val_acc_history']) > 0:
+if len(data["val_acc_history"]) > 0:
     # ✅ 智能选择横轴：优先使用 val_idx
-    val_x = data['val_idx'] if len(data['val_idx']) == len(data['val_acc_history']) \
-            else rounds[:len(data['val_acc_history'])]
-    
-    ax.plot(val_x, data['val_acc_history'], 'r-', 
-            label='Val Accuracy', marker='s')
+    val_x = (
+        data["val_idx"]
+        if len(data["val_idx"]) == len(data["val_acc_history"])
+        else rounds[: len(data["val_acc_history"])]
+    )
+
+    ax.plot(val_x, data["val_acc_history"], "r-", label="Val Accuracy", marker="s")
 ```
 
 **逻辑说明：**
@@ -220,7 +222,7 @@ monitor = BoostMonitor(...)
 # 训练循环
 for i in range(n_estimators):
     # 训练...
-    
+
     # 验证（仅在特定轮次）
     if (i + 1) in [50, 100, 200, 500]:
         val_acc, val_f1 = evaluate_on_val_set(model)
@@ -228,7 +230,8 @@ for i in range(n_estimators):
 
 # 保存 monitor
 import joblib
-joblib.dump(monitor, 'experiments/my_exp/results/monitor.joblib')
+
+joblib.dump(monitor, "experiments/my_exp/results/monitor.joblib")
 ```
 
 #### 2. 可视化时加载 joblib
@@ -370,24 +373,22 @@ from src.monitor import BoostMonitor
 
 # 初始化监控器
 monitor = BoostMonitor(
-    noise_indices=noise_idx,
-    clean_indices=clean_idx,
-    is_data_noisy=True
+    noise_indices=noise_idx, clean_indices=clean_idx, is_data_noisy=True
 )
 
 # 训练
 for i in range(n_estimators):
     # 每轮训练...
-    
+
     # val-after-train 模式：仅在特定轮次验证
     if (i + 1) % 50 == 0:  # 每50轮验证一次
         val_acc, val_f1 = evaluate_on_val_set(clf)
         monitor.record_validation(i, val_acc, val_f1)  # ✅ 自动记录 val_idx
 
 # 保存完整监控数据
-os.makedirs('experiments/my_exp/results', exist_ok=True)
-joblib.dump(monitor, 'experiments/my_exp/results/monitor.joblib')  # ✅ 推荐
-monitor.dump('experiments/my_exp/results/final_results.csv')      # 可选
+os.makedirs("experiments/my_exp/results", exist_ok=True)
+joblib.dump(monitor, "experiments/my_exp/results/monitor.joblib")  # ✅ 推荐
+monitor.dump("experiments/my_exp/results/final_results.csv")  # 可选
 ```
 
 ### 2. 可视化脚本

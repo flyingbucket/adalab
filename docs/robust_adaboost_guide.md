@@ -201,7 +201,7 @@ python compare_robust_methods.py
 {
     "n_estimators": 100,
     "learning_rate": 0.5,
-    "weight_clip_percentile": 95,    # 标准裁剪
+    "weight_clip_percentile": 95,  # 标准裁剪
     "use_early_stopping": True,
     "validation_fraction": 0.1,
     "early_stopping_rounds": 10,
@@ -222,10 +222,10 @@ python compare_robust_methods.py
 ```python
 {
     "n_estimators": 100,
-    "learning_rate": 0.3,           # 降低学习率
-    "weight_clip_percentile": 90,   # 更激进裁剪
+    "learning_rate": 0.3,  # 降低学习率
+    "weight_clip_percentile": 90,  # 更激进裁剪
     "use_early_stopping": True,
-    "validation_fraction": 0.15,    # 更大验证集
+    "validation_fraction": 0.15,  # 更大验证集
     "early_stopping_rounds": 15,
     "use_sample_weight_smoothing": True,  # 启用平滑
     "smoothing_factor": 0.7,
@@ -246,10 +246,10 @@ python compare_robust_methods.py
 {
     "n_estimators": 200,
     "learning_rate": 0.5,
-    "weight_clip_percentile": 98,   # 轻微裁剪
+    "weight_clip_percentile": 98,  # 轻微裁剪
     "use_early_stopping": True,
-    "validation_fraction": 0.2,     # 大验证集
-    "early_stopping_rounds": 5,     # 快速早停
+    "validation_fraction": 0.2,  # 大验证集
+    "early_stopping_rounds": 5,  # 快速早停
     "use_sample_weight_smoothing": False,
 }
 ```
@@ -273,7 +273,7 @@ python compare_robust_methods.py
     "validation_fraction": 0.1,
     "early_stopping_rounds": 10,
     "use_sample_weight_smoothing": True,
-    "smoothing_factor": 0.5,        # 强平滑
+    "smoothing_factor": 0.5,  # 强平滑
 }
 ```
 
@@ -290,7 +290,7 @@ python compare_robust_methods.py
 ```python
 {
     "n_estimators": 150,
-    "learning_rate": 0.1,           # 很低学习率
+    "learning_rate": 0.1,  # 很低学习率
     "weight_clip_percentile": 90,
     "use_early_stopping": True,
     "validation_fraction": 0.15,
@@ -390,16 +390,16 @@ elif overfit < 0.05:
 **调整策略：**
 ```python
 # 噪声少 → 温和裁剪
-weight_clip_percentile=98
+weight_clip_percentile = 98
 
 # 噪声中等 → 标准裁剪
-weight_clip_percentile=95
+weight_clip_percentile = 95
 
 # 噪声多 → 激进裁剪
-weight_clip_percentile=90
+weight_clip_percentile = 90
 
 # 噪声极多 → 超激进裁剪
-weight_clip_percentile=85
+weight_clip_percentile = 85
 ```
 
 **观察：**
@@ -413,13 +413,13 @@ weight_clip_percentile=85
 **调整策略：**
 ```python
 # 快速早停（防止过拟合）
-early_stopping_rounds=5
+early_stopping_rounds = 5
 
 # 标准早停
-early_stopping_rounds=10
+early_stopping_rounds = 10
 
 # 耐心早停（确保找到最佳点）
-early_stopping_rounds=20
+early_stopping_rounds = 20
 ```
 
 **观察：**
@@ -433,16 +433,16 @@ early_stopping_rounds=20
 **调整策略：**
 ```python
 # 激进（快速收敛，可能过拟合）
-learning_rate=1.0
+learning_rate = 1.0
 
 # 标准
-learning_rate=0.5
+learning_rate = 0.5
 
 # 保守（稳定，需要更多弱学习器）
-learning_rate=0.3
+learning_rate = 0.3
 
 # 超保守（最稳定）
-learning_rate=0.1
+learning_rate = 0.1
 ```
 
 **权衡：**
@@ -456,13 +456,13 @@ learning_rate=0.1
 **调整策略：**
 ```python
 # 数据量大 → 小验证集
-validation_fraction=0.05
+validation_fraction = 0.05
 
 # 标准
-validation_fraction=0.1
+validation_fraction = 0.1
 
 # 更可靠的早停 → 大验证集
-validation_fraction=0.2
+validation_fraction = 0.2
 ```
 
 ---
@@ -495,10 +495,10 @@ validation_fraction=0.2
 **A:** 可以！自定义配置：
 ```python
 clf = RobustAdaBoost(
-    weight_clip_percentile=92,      # 自定义裁剪
-    use_early_stopping=True,        # 启用早停
+    weight_clip_percentile=92,  # 自定义裁剪
+    use_early_stopping=True,  # 启用早停
     use_sample_weight_smoothing=True,  # 启用平滑
-    learning_rate=0.3,              # 降低学习率
+    learning_rate=0.3,  # 降低学习率
 )
 ```
 
